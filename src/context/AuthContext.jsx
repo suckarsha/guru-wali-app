@@ -35,11 +35,7 @@ export function AuthProvider({ children }) {
         throw new Error('Username atau password salah, atau peran tidak sesuai.');
       }
       
-      matchedUser = data;
-
-      if (!matchedUser) {
-        throw new Error('Username atau password salah.');
-      }
+      const matchedUser = data;
 
       setUser(matchedUser);
       localStorage.setItem('authSession', JSON.stringify(matchedUser));
