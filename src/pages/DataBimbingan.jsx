@@ -5,17 +5,6 @@ import { Filter, Download, FileSpreadsheet } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-const dummyJurnal = [
-  { id: 1, tanggal: '2026-03-15', waktu: '08:30', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Nilai Matematika menurun di UTS', tindakLanjut: 'Diskusi strategi belajar dan jadwal les' },
-  { id: 2, tanggal: '2026-03-14', waktu: '10:00', murid: 'Siti Aminah', kelas: 'X IPA 1', jenis: 'Pengembangan Karakter', topik: 'Sering terlambat masuk kelas', tindakLanjut: 'Koordinasi dengan orang tua' },
-  { id: 3, tanggal: '2026-03-12', waktu: '13:00', murid: 'Dewi Lestari', kelas: 'X IPA 1', jenis: 'Pengembangan Kompetensi', topik: 'Minat mengikuti olimpiade sains', tindakLanjut: 'Daftarkan ke program bimbingan olimpiade' },
-  { id: 4, tanggal: '2026-03-10', waktu: '09:15', murid: 'Ayu Wulandari', kelas: 'X IPA 1', jenis: 'Pengembangan Keterampilan', topik: 'Kurang percaya diri saat presentasi', tindakLanjut: 'Latihan presentasi mingguan' },
-  { id: 5, tanggal: '2026-03-08', waktu: '08:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pengembangan Karakter', topik: 'Perilaku kurang sopan ke teman', tindakLanjut: 'Sesi konseling ringan' },
-  { id: 6, tanggal: '2026-03-05', waktu: '11:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pengembangan Kompetensi', topik: 'Bakat di bidang robotik', tindakLanjut: 'Arahkan ke ekskul robotik' },
-  { id: 7, tanggal: '2026-03-03', waktu: '14:00', murid: 'Siti Aminah', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Kesulitan memahami fisika', tindakLanjut: 'Koordinasi dengan guru fisika' },
-  { id: 8, tanggal: '2026-03-01', waktu: '09:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Review jadwal belajar', tindakLanjut: 'Susun jadwal mingguan baru' },
-];
-
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
 const jenisConfig = [
@@ -26,9 +15,19 @@ const jenisConfig = [
 ];
 
 export default function DataBimbingan() {
+  const [dataJurnal, setDataJurnal] = useState([]);
   const [filterBulan, setFilterBulan] = useState('Semua');
   const [filterMurid, setFilterMurid] = useState('Semua');
-  const [chartMurid, setChartMurid] = useState(dummyJurnal[0]?.murid || '');
+  const [chartMurid, setChartMurid] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('jurnalData');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setDataJurnal(parsed);
+      if (parsed.length > 0) setChartMurid(parsed[0].murid);
+    }
+  }, []);
 
   // Load Admin Settings
   const [settings, setSettings] = useState({
@@ -47,10 +46,10 @@ export default function DataBimbingan() {
     }
   }, []);
 
-  const muridNames = ['Semua', ...new Set(dummyJurnal.map(j => j.murid))];
-  const chartMuridNames = [...new Set(dummyJurnal.map(j => j.murid))];
+  const muridNames = ['Semua', ...new Set(dataJurnal.map(j => j.murid))];
+  const chartMuridNames = [...new Set(dataJurnal.map(j => j.murid))];
 
-  const filteredData = dummyJurnal.filter(j => {
+  const filteredData = dataJurnal.filter(j => {
     // Determine month string of jurnal
     const monthIndex = parseInt(j.tanggal.split('-')[1], 10);
     const jMonth = bulanList[monthIndex]; // Assuming month is 1-indexed and matches list starting at index 1
@@ -61,7 +60,7 @@ export default function DataBimbingan() {
   });
 
   // Donut chart data for selected student
-  const studentJurnal = dummyJurnal.filter(j => j.murid === chartMurid);
+  const studentJurnal = dataJurnal.filter(j => j.murid === chartMurid);
   const total = studentJurnal.length;
   const counts = jenisConfig.map(jc => ({
     ...jc,

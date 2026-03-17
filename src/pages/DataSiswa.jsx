@@ -2,16 +2,12 @@ import { useState, useRef, useMemo } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Plus, Search, Eye, Edit, Trash2, Upload, X, Save, Filter } from 'lucide-react';
 
-const initialSiswa = [
-  { id: 1, nisn: '0051234567', name: 'Ahmad Budi Santoso', class: 'X IPA 1', gender: 'L' },
-  { id: 2, nisn: '0069876543', name: 'Siti Aminah', class: 'X IPA 1', gender: 'P' },
-  { id: 3, nisn: '0054567890', name: 'Joko Widodo', class: 'XI IPS 2', gender: 'L' },
-  { id: 4, nisn: '0061122334', name: 'Rina Nose', class: 'XII Bahasa', gender: 'P' },
-  { id: 5, nisn: '0059988776', name: 'Bambang Pamungkas', class: 'XII IPA 3', gender: 'L' },
-];
-
 export default function DataSiswa() {
-  const [data, setData] = useState(initialSiswa);
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('dataSiswa');
+    if (saved) return JSON.parse(saved);
+    return [];
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('Semua Kelas');
   const [selectedIds, setSelectedIds] = useState([]);
@@ -55,14 +51,18 @@ export default function DataSiswa() {
 
   const handleDelete = (id) => {
     if (confirm('Yakin ingin menghapus data siswa ini?')) {
-      setData(data.filter(d => d.id !== id));
+      const newData = data.filter(d => d.id !== id);
+      setData(newData);
+      localStorage.setItem('dataSiswa', JSON.stringify(newData));
       setSelectedIds(selectedIds.filter(selId => selId !== id));
     }
   };
 
   const handleBulkDelete = () => {
     if (confirm(`Yakin ingin menghapus ${selectedIds.length} data siswa yang dipilih?`)) {
-      setData(data.filter(d => !selectedIds.includes(d.id)));
+      const newData = data.filter(d => !selectedIds.includes(d.id));
+      setData(newData);
+      localStorage.setItem('dataSiswa', JSON.stringify(newData));
       setSelectedIds([]);
     }
   };
@@ -87,16 +87,44 @@ export default function DataSiswa() {
     }
   };
 
+  // Helper function to sync new classes to dataKelas
+  const syncNewClasses = (newStudents) => {
+    const savedClasses = localStorage.getItem('dataKelas');
+    let existingClassesData = savedClasses ? JSON.parse(savedClasses) : [];
+    const existingClassNames = new Set(existingClassesData.map(c => c.name));
+    
+    let isAdded = false;
+    newStudents.forEach(siswa => {
+      if (siswa.class && !existingClassNames.has(siswa.class)) {
+        existingClassNames.add(siswa.class);
+        existingClassesData.push({
+          id: Date.now() + Math.random(),
+          name: siswa.class
+        });
+        isAdded = true;
+      }
+    });
+
+    if (isAdded) {
+      localStorage.setItem('dataKelas', JSON.stringify(existingClassesData));
+    }
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Simulate real file reading with artificial delay & dummy rows
+      // Simulate reading file and adding some students
       const importedData = [
-        { id: Date.now() + 1, nisn: '0066655443', name: 'Siswa Import 1', class: 'X IPA 2', gender: 'L' },
-        { id: Date.now() + 2, nisn: '0055544332', name: 'Siswa Import 2', class: 'X IPA 2', gender: 'P' },
-        { id: Date.now() + 3, nisn: '0044433221', name: 'Siswa Import 3', class: 'XI IPS 1', gender: 'L' }
+        { id: Date.now() + 1, nisn: `00${Math.floor(10000000 + Math.random() * 90000000)}`, name: `Siswa Import ${Date.now()}`, class: 'X MIPA 1', gender: 'L' },
       ];
-      setData([...importedData, ...data]);
+      
+      const newData = [...importedData, ...data];
+      setData(newData);
+      localStorage.setItem('dataSiswa', JSON.stringify(newData));
+      
+      // Auto-add new classes
+      syncNewClasses(importedData);
+      
       alert(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`);
       e.target.value = null;
     }
@@ -104,11 +132,18 @@ export default function DataSiswa() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    let newData;
     if (editItem) {
-      setData(data.map(d => d.id === editItem.id ? { ...d, ...form } : d));
+      newData = data.map(d => d.id === editItem.id ? { ...d, ...form } : d);
     } else {
-      setData([{ id: Date.now(), ...form }, ...data]);
+      newData = [{ id: Date.now(), ...form }, ...data];
     }
+    setData(newData);
+    localStorage.setItem('dataSiswa', JSON.stringify(newData));
+    
+    // Auto-add new class
+    syncNewClasses([form]);
+    
     setShowModal(false);
   };
 

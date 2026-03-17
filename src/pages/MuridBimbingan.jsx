@@ -2,31 +2,28 @@ import { useState, useMemo, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Search, Plus, Trash2, X, Filter, Eye, Edit, Save } from 'lucide-react';
 
-const dummyAllSiswa = [
-  { id: 1, nisn: '0051234567', name: 'Ahmad Budi Santoso', class: 'X IPA 1', gender: 'L', kontakOrtu: '081234567890' },
-  { id: 2, nisn: '0069876543', name: 'Siti Aminah', class: 'X IPA 1', gender: 'P', kontakOrtu: '081298765432' },
-  { id: 3, nisn: '0054567890', name: 'Joko Widodo', class: 'XI IPS 2', gender: 'L', kontakOrtu: '' },
-  { id: 4, nisn: '0061122334', name: 'Rina Nose', class: 'XII Bahasa', gender: 'P', kontakOrtu: '' },
-  { id: 5, nisn: '0059988776', name: 'Bambang Pamungkas', class: 'XII IPA 3', gender: 'L', kontakOrtu: '' },
-  { id: 6, nisn: '0053344556', name: 'Dewi Lestari', class: 'X IPA 1', gender: 'P', kontakOrtu: '' },
-  { id: 7, nisn: '0057766554', name: 'Agus Pratama', class: 'XI IPS 2', gender: 'L', kontakOrtu: '' },
-  { id: 8, nisn: '0052233445', name: 'Ayu Wulandari', class: 'X IPA 1', gender: 'P', kontakOrtu: '' },
-];
-
 export default function MuridBimbingan() {
+  const [dataSiswaAwal, setDataSiswaAwal] = useState([]);
   const [selectedSiswa, setSelectedSiswa] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('selectedMuridBimbingan');
-    if (saved) {
+    // Load main data siswa
+    const savedAllSiswa = localStorage.getItem('dataSiswa');
+    if (savedAllSiswa) {
+      setDataSiswaAwal(JSON.parse(savedAllSiswa));
+    }
+
+    // Load selected bimbingan students
+    const savedSelected = localStorage.getItem('selectedMuridBimbingan');
+    if (savedSelected) {
       try {
-        setSelectedSiswa(JSON.parse(saved));
+        setSelectedSiswa(JSON.parse(savedSelected));
       } catch(e) {
-        setSelectedSiswa([dummyAllSiswa[0], dummyAllSiswa[1]]);
+        setSelectedSiswa([]);
       }
     } else {
-      setSelectedSiswa([dummyAllSiswa[0], dummyAllSiswa[1]]);
+      setSelectedSiswa([]);
     }
     setIsLoaded(true);
   }, []);
@@ -50,8 +47,8 @@ export default function MuridBimbingan() {
   const [editForm, setEditForm] = useState({ kontakOrtu: '' });
 
   const classes = useMemo(() => {
-    return ['Semua Kelas', ...new Set(dummyAllSiswa.map(s => s.class))];
-  }, []);
+    return ['Semua Kelas', ...new Set(dataSiswaAwal.map(s => s.class))];
+  }, [dataSiswaAwal]);
 
   const openAddModal = () => {
     setTempSelection(selectedSiswa.map(s => s.id));
@@ -65,7 +62,7 @@ export default function MuridBimbingan() {
     const newSelected = tempSelection.map(id => {
        const existing = selectedSiswa.find(s => s.id === id);
        if (existing) return existing;
-       return dummyAllSiswa.find(s => s.id === id);
+       return dataSiswaAwal.find(s => s.id === id);
     });
     setSelectedSiswa(newSelected);
     setShowModal(false);
@@ -102,7 +99,7 @@ export default function MuridBimbingan() {
     setShowEditModal(false);
   };
 
-  const modalFilteredSiswa = dummyAllSiswa.filter(s => {
+  const modalFilteredSiswa = dataSiswaAwal.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(modalSearch.toLowerCase()) || s.nisn.includes(modalSearch);
     const matchClass = modalClassFilter === 'Semua Kelas' || s.class === modalClassFilter;
     return matchSearch && matchClass;

@@ -1,16 +1,6 @@
 import PageHeader from '../components/PageHeader';
 import { useState } from 'react';
 
-// Monthly journal data per guru (weekly = ~4 per month max)
-const dummyGuruData = {
-  'I Kadek Sukarsa': { Jan: 4, Feb: 4, Mar: 3, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 },
-  'Ni Luh Putu Sari': { Jan: 3, Feb: 4, Mar: 4, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 },
-  'I Made Budi Artawan': { Jan: 4, Feb: 3, Mar: 4, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 },
-  'Ni Wayan Rai': { Jan: 2, Feb: 3, Mar: 1, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 },
-  'I Gede Arya': { Jan: 3, Feb: 2, Mar: 3, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 },
-};
-
-const guruNames = Object.keys(dummyGuruData);
 const bulanKeys = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
 const MAX_PER_BULAN = 5; // max Sabtu dalam satu bulan
 
@@ -41,11 +31,42 @@ const barColors = [
 ];
 
 export default function Monitoring() {
-  const [filterGuru, setFilterGuru] = useState(guruNames[0]);
+  const [dataGuru, setDataGuru] = useState([]);
+  const [dataJurnal, setDataJurnal] = useState([]);
+  const [filterGuru, setFilterGuru] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const guruMonthly = dummyGuruData[filterGuru] || {};
+  useEffect(() => {
+    const savedGuru = localStorage.getItem('dataGuru');
+    const gurus = savedGuru ? JSON.parse(savedGuru) : [];
+    setDataGuru(gurus);
+    if (gurus.length > 0) setFilterGuru(gurus[0].nama);
+
+    const savedJurnal = localStorage.getItem('jurnalData');
+    setDataJurnal(savedJurnal ? JSON.parse(savedJurnal) : []);
+  }, []);
+
+  // Compute stats per guru
+  const guruNames = dataGuru.map(g => g.nama);
+  
+  const generateMonthlyDataForGuru = (guruName) => {
+    const monthlyCounts = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, Mei: 0, Jun: 0, Jul: 0, Ags: 0, Sep: 0, Okt: 0, Nov: 0, Des: 0 };
+    const guruJurnals = dataJurnal.filter(j => j.guru === guruName);
+    
+    guruJurnals.forEach(j => {
+      const parts = j.tanggal.split('-');
+      if (parts.length === 3) {
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyCounts[bulanKeys[monthIndex]]++;
+        }
+      }
+    });
+    return monthlyCounts;
+  };
+
+  const guruMonthly = generateMonthlyDataForGuru(filterGuru);
   const maxVal = Math.max(...Object.values(guruMonthly), 1);
 
   // Count active months (months with data > 0) for status calc
@@ -53,12 +74,11 @@ export default function Monitoring() {
 
   // Summary for the table
   const guruSummary = guruNames.map(nama => {
-    const data = dummyGuruData[nama];
+    const data = generateMonthlyDataForGuru(nama);
     const total = Object.values(data).reduce((a, b) => a + b, 0);
     const aktif = Object.values(data).filter(v => v > 0).length;
     return { nama, total, aktif };
   });
-
 
   return (
     <>

@@ -5,32 +5,45 @@ import { Users, GraduationCap, BookOpen, AlertCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [bimbinganCount, setBimbinganCount] = useState(2); // default match empty state
+  const [bimbinganCount, setBimbinganCount] = useState(0);
+  const [totalSiswa, setTotalSiswa] = useState(0);
+  const [totalKelas, setTotalKelas] = useState(0);
+  const [totalJurnal, setTotalJurnal] = useState(0);
+  const [pengumuman, setPengumuman] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('selectedMuridBimbingan');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setBimbinganCount(parsed.length);
-      } catch (e) {
-        setBimbinganCount(2);
-      }
+    try {
+      const savedBimbingan = localStorage.getItem('selectedMuridBimbingan');
+      if (savedBimbingan) setBimbinganCount(JSON.parse(savedBimbingan).length);
+
+      const savedSiswa = localStorage.getItem('dataSiswa');
+      if (savedSiswa) setTotalSiswa(JSON.parse(savedSiswa).length);
+
+      const savedKelas = localStorage.getItem('dataKelas');
+      if (savedKelas) setTotalKelas(JSON.parse(savedKelas).length);
+
+      const savedJurnal = localStorage.getItem('jurnalData');
+      if (savedJurnal) setTotalJurnal(JSON.parse(savedJurnal).length);
+
+      const savedPengumuman = localStorage.getItem('dataPengumuman');
+      if (savedPengumuman) setPengumuman(JSON.parse(savedPengumuman).slice(0, 3)); // Top 3
+    } catch (e) {
+      console.error(e);
     }
   }, []);
 
   const adminStats = [
-    { title: 'Total Siswa', value: '1,245', icon: <Users size={24} />, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-    { title: 'Total Kelas', value: '36', icon: <GraduationCap size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
-    { title: 'Jurnal Hari Ini', value: '128', icon: <BookOpen size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-    { title: 'Siswa Bermasalah', value: '12', icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
+    { title: 'Total Siswa', value: totalSiswa.toString(), icon: <Users size={24} />, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    { title: 'Total Kelas', value: totalKelas.toString(), icon: <GraduationCap size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+    { title: 'Jurnal Masuk', value: totalJurnal.toString(), icon: <BookOpen size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { title: 'Siswa Bermasalah', value: '0', icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
   ];
 
   const guruStats = [
     { title: 'Murid Bimbingan', value: bimbinganCount.toString(), icon: <Users size={24} />, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-    { title: 'Jurnal Saya', value: '128', icon: <BookOpen size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
-    { title: 'Kehadiran Siswa', value: '98%', icon: <GraduationCap size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-    { title: 'Perlu Perhatian', value: '3', icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
+    { title: 'Jurnal Saya', value: totalJurnal.toString(), icon: <BookOpen size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+    { title: 'Kehadiran Siswa', value: '100%', icon: <GraduationCap size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { title: 'Perlu Perhatian', value: '0', icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
   ];
 
   const stats = user?.role === 'admin' ? adminStats : guruStats;
@@ -73,15 +86,17 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 min-h-[400px]">
            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Pengumuman</h3>
            <div className="space-y-4">
-             <div className="p-4 bg-primary-light dark:bg-gray-800 rounded-xl">
-               <h4 className="font-semibold text-primary dark:text-blue-400 text-sm mb-1">Rapat Evaluasi Bulanan</h4>
-               <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Jumat, 24 Maret 2026 - 13:00 WIB</p>
-               <span className="inline-block px-2 py-1 bg-white dark:bg-gray-700 text-primary text-[10px] font-bold rounded-md">PENTING</span>
-             </div>
-             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm mb-1">Batas Pengisian Jurnal</h4>
-               <p className="text-xs text-gray-600 dark:text-gray-400">Mohon lengkapi jurnal minggu ini sebelum hari Sabtu.</p>
-             </div>
+             {pengumuman.length === 0 ? (
+               <p className="text-sm text-gray-500">Belum ada pengumuman.</p>
+             ) : (
+               pengumuman.map((item, idx) => (
+                 <div key={idx} className={`p-4 rounded-xl ${item.prioritas === 'penting' ? 'bg-primary-light dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
+                   <h4 className={`font-semibold text-sm mb-1 ${item.prioritas === 'penting' ? 'text-primary dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>{item.judul}</h4>
+                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{item.tanggal}</p>
+                   {item.prioritas === 'penting' && <span className="inline-block px-2 py-1 bg-white dark:bg-gray-700 text-primary text-[10px] font-bold rounded-md uppercase">{item.prioritas}</span>}
+                 </div>
+               ))
+             )}
            </div>
         </div>
       </div>

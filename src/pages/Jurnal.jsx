@@ -1,28 +1,44 @@
 import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Save, Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Jurnal() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     murid: '', tanggal: '', kelas: '', jenisBimbingan: '', topik: '', tindakLanjut: '',
   });
+  const [muridBimbingan, setMuridBimbingan] = useState([]);
 
-  const muridBimbingan = [
-    { id: 1, nama: 'Ahmad Budi Santoso', kelas: 'X IPA 1' },
-    { id: 2, nama: 'Siti Aminah', kelas: 'X IPA 1' },
-    { id: 6, nama: 'Dewi Lestari', kelas: 'X IPA 1' },
-    { id: 8, nama: 'Ayu Wulandari', kelas: 'X IPA 1' },
-  ];
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedMuridBimbingan');
+    if (saved) {
+      setMuridBimbingan(JSON.parse(saved));
+    }
+  }, []);
 
   const handleMuridChange = (e) => {
     const muridId = e.target.value;
     const murid = muridBimbingan.find(m => String(m.id) === muridId);
-    setFormData({ ...formData, murid: muridId, kelas: murid?.kelas || '' });
+    setFormData({ ...formData, murid: murid?.name || '', kelas: murid?.class || '' });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert('Simulasi: Jurnal disimpan!\n' + JSON.stringify(formData, null, 2));
+    const savedJurnals = localStorage.getItem('jurnalData');
+    const existingJurnals = savedJurnals ? JSON.parse(savedJurnals) : [];
+    
+    const newJurnal = {
+      ...formData,
+      id: Date.now(),
+      guru: user?.nama || 'Unknown',
+      waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    const upatedJurnals = [newJurnal, ...existingJurnals];
+    localStorage.setItem('jurnalData', JSON.stringify(upatedJurnals));
+    
+    alert('Jurnal berhasil disimpan!');
     setFormData({ murid: '', tanggal: '', kelas: '', jenisBimbingan: '', topik: '', tindakLanjut: '' });
   };
 
@@ -47,9 +63,9 @@ export default function Jurnal() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Murid</label>
-              <select required value={formData.murid} onChange={handleMuridChange} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
+              <select required value={muridBimbingan.find(m => m.name === formData.murid)?.id || ''} onChange={handleMuridChange} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
                 <option value="" disabled>-- Pilih Murid Bimbingan --</option>
-                {muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.nama}</option>)}
+                {muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div className="space-y-2">

@@ -5,20 +5,24 @@ import { Filter, Download, FileSpreadsheet } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-const dummyKehadiran = [
-  { id: 1, murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', bulan: 'Maret', sakit: 1, izin: 0, tk: 0, jumlah: 1 },
-  { id: 2, murid: 'Siti Aminah', kelas: 'X IPA 1', bulan: 'Maret', sakit: 0, izin: 2, tk: 1, jumlah: 3 },
-  { id: 3, murid: 'Dewi Lestari', kelas: 'X IPA 1', bulan: 'Maret', sakit: 0, izin: 0, tk: 0, jumlah: 0 },
-  { id: 4, murid: 'Ayu Wulandari', kelas: 'X IPA 1', bulan: 'Maret', sakit: 2, izin: 1, tk: 0, jumlah: 3 },
-];
-
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const TOTAL_HARI = 26; // hari efektif per bulan
 
 export default function DataKehadiran() {
+  const [dataKehadiran, setDataKehadiran] = useState([]);
   const [filterBulan, setFilterBulan] = useState('Semua');
   const [filterMurid, setFilterMurid] = useState('Semua'); // 'Semua' or specific student
-  const [chartMurid, setChartMurid] = useState(dummyKehadiran[0]?.murid || '');
+  const [chartMurid, setChartMurid] = useState('');
+
+  useEffect(() => {
+    // We get Kehadiran data from localStorage for Demo (typically fetched from backend)
+    const saved = localStorage.getItem('dataKehadiranSiswa');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setDataKehadiran(parsed);
+      if (parsed.length > 0) setChartMurid(parsed[0].murid);
+    }
+  }, []);
 
   // Load Admin Settings
   const [settings, setSettings] = useState({
@@ -37,17 +41,17 @@ export default function DataKehadiran() {
     }
   }, []);
 
-  const muridNames = ['Semua', ...new Set(dummyKehadiran.map(k => k.murid))];
-  const chartMuridNames = [...new Set(dummyKehadiran.map(k => k.murid))];
+  const muridNames = ['Semua', ...new Set(dataKehadiran.map(k => k.murid))];
+  const chartMuridNames = [...new Set(dataKehadiran.map(k => k.murid))];
 
-  const filteredData = dummyKehadiran.filter(k => {
+  const filteredData = dataKehadiran.filter(k => {
     const matchBulan = filterBulan === 'Semua' || k.bulan === filterBulan;
     const matchMurid = filterMurid === 'Semua' || k.murid === filterMurid;
     return matchBulan && matchMurid;
   });
 
   // Data for the donut chart (selected student)
-  const selectedData = dummyKehadiran.find(k => k.murid === chartMurid) || dummyKehadiran[0];
+  const selectedData = dataKehadiran.find(k => k.murid === chartMurid) || dataKehadiran[0];
   const hadir = selectedData ? TOTAL_HARI - selectedData.jumlah : 0;
   const pctHadir = selectedData ? Math.round((hadir / TOTAL_HARI) * 100) : 0;
   const pctSakit = selectedData ? Math.round((selectedData.sakit / TOTAL_HARI) * 100) : 0;

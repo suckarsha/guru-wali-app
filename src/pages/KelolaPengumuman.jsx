@@ -2,14 +2,12 @@ import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Plus, Edit, Trash2, X, Save, Megaphone } from 'lucide-react';
 
-const initialPengumuman = [
-  { id: 1, judul: 'Rapat Evaluasi Bulanan', isi: 'Seluruh guru wali wajib hadir pada rapat evaluasi bulanan.', tanggal: '2026-03-24', prioritas: 'penting' },
-  { id: 2, judul: 'Batas Pengisian Jurnal', isi: 'Mohon lengkapi jurnal minggu ini sebelum hari Sabtu.', tanggal: '2026-03-20', prioritas: 'biasa' },
-  { id: 3, judul: 'Workshop Kurikulum Merdeka', isi: 'Pendaftaran workshop batch 2 dibuka hingga 28 Maret.', tanggal: '2026-03-18', prioritas: 'info' },
-];
-
 export default function KelolaPengumuman() {
-  const [data, setData] = useState(initialPengumuman);
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('dataPengumuman');
+    if (saved) return JSON.parse(saved);
+    return [];
+  });
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ judul: '', isi: '', tanggal: '', prioritas: 'biasa' });
@@ -28,17 +26,22 @@ export default function KelolaPengumuman() {
 
   const handleDelete = (id) => {
     if (confirm('Yakin ingin menghapus pengumuman ini?')) {
-      setData(data.filter(d => d.id !== id));
+      const newData = data.filter(d => d.id !== id);
+      setData(newData);
+      localStorage.setItem('dataPengumuman', JSON.stringify(newData));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    let newData;
     if (editItem) {
-      setData(data.map(d => d.id === editItem.id ? { ...d, ...form } : d));
+      newData = data.map(d => d.id === editItem.id ? { ...d, ...form } : d);
     } else {
-      setData([{ id: Date.now(), ...form }, ...data]);
+      newData = [{ id: Date.now(), ...form }, ...data];
     }
+    setData(newData);
+    localStorage.setItem('dataPengumuman', JSON.stringify(newData));
     setShowModal(false);
   };
 
