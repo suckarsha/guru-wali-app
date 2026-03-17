@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
-import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [totalKelas, setTotalKelas] = useState(0);
   const [totalJurnal, setTotalJurnal] = useState(0);
   const [pengumuman, setPengumuman] = useState([]);
+  const [selectedPengumuman, setSelectedPengumuman] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     try {
@@ -102,7 +104,11 @@ export default function Dashboard() {
                <p className="text-sm text-gray-500">Belum ada pengumuman.</p>
              ) : (
                pengumuman.map((item, idx) => (
-                 <div key={idx} className={`p-4 rounded-xl ${item.prioritas === 'penting' ? 'bg-primary-light dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
+                 <div 
+                   key={idx} 
+                   onClick={() => { setSelectedPengumuman(item); setShowModal(true); }}
+                   className={`p-4 rounded-xl cursor-pointer hover:shadow-md transition-all ${item.prioritas === 'penting' ? 'bg-primary-light dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
+                 >
                    <h4 className={`font-semibold text-sm mb-1 ${item.prioritas === 'penting' ? 'text-primary dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>{item.judul}</h4>
                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{item.tanggal}</p>
                    {item.prioritas === 'penting' && <span className="inline-block px-2 py-1 bg-white dark:bg-gray-700 text-primary text-[10px] font-bold rounded-md uppercase">{item.prioritas}</span>}
@@ -112,6 +118,38 @@ export default function Dashboard() {
            </div>
         </div>
       </div>
+
+      {/* Modal Pengumuman */}
+      {showModal && selectedPengumuman && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white">Detail Pengumuman</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{selectedPengumuman.judul}</h4>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{selectedPengumuman.tanggal}</span>
+                  {selectedPengumuman.prioritas === 'penting' && (
+                    <span className="px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-md uppercase">Penting</span>
+                  )}
+                </div>
+              </div>
+              <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-100 dark:border-gray-700">
+                {selectedPengumuman.isi}
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+              <button onClick={() => setShowModal(false)} className="px-5 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

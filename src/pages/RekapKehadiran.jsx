@@ -1,32 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Save } from 'lucide-react';
-
-const muridBimbingan = [
-  { id: 1, nama: 'Ahmad Budi Santoso', kelas: 'X IPA 1' },
-  { id: 2, nama: 'Siti Aminah', kelas: 'X IPA 1' },
-  { id: 6, nama: 'Dewi Lestari', kelas: 'X IPA 1' },
-  { id: 8, nama: 'Ayu Wulandari', kelas: 'X IPA 1' },
-];
+import { useAuth } from '../context/AuthContext';
 
 const bulanList = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
 export default function RekapKehadiran() {
+  const { user } = useAuth();
+  const [muridBimbingan, setMuridBimbingan] = useState([]);
   const [formData, setFormData] = useState({
     murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0,
   });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedMuridBimbingan');
+    if (saved) {
+      setMuridBimbingan(JSON.parse(saved));
+    }
+  }, []);
 
   const jumlah = Number(formData.sakit) + Number(formData.izin) + Number(formData.tanpaKeterangan);
 
   const handleMuridChange = (e) => {
     const muridId = e.target.value;
     const murid = muridBimbingan.find(m => String(m.id) === muridId);
-    setFormData({ ...formData, murid: muridId, kelas: murid?.kelas || '' });
+    setFormData({ ...formData, murid: muridId, kelas: murid?.class || '' });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert('Simulasi: Rekap kehadiran disimpan!\n' + JSON.stringify({ ...formData, jumlah }, null, 2));
+    
+    // Validate that a murid is selected
+    if (!formData.murid) {
+      alert("Pilih murid bimbingan terlebih dahulu");
+      return;
+    }
+
+    const savedRecords = localStorage.getItem('kehadiranData');
+    const existingRecords = savedRecords ? JSON.parse(savedRecords) : [];
+    
+    const muridDetail = muridBimbingan.find(m => String(m.id) === String(formData.murid));
+    
+    const newRecord = {
+      ...formData,
+      id: Date.now(),
+      namaMurid: muridDetail?.name || 'Unknown',
+      guru: user?.nama || 'Unknown',
+      jumlah: jumlah
+    };
+    
+    const updatedRecords = [newRecord, ...existingRecords];
+    localStorage.setItem('kehadiranData', JSON.stringify(updatedRecords));
+    
+    alert('Rekap kehadiran berhasil disimpan!');
     setFormData({ murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0 });
   };
 
@@ -53,12 +79,16 @@ export default function RekapKehadiran() {
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Murid</label>
               <select required value={formData.murid} onChange={handleMuridChange} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
                 <option value="" disabled>-- Pilih Murid --</option>
-                {muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.nama}</option>)}
+                {muridBimbingan.length > 0 ? (
+                  muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.name}</option>)
+                ) : (
+                  <option value="" disabled>Belum ada murid bimbingan yang Dipilih di menu Murid Bimbingan</option>
+                )}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Kelas (Otomatis)</label>
-              <input type="text" readOnly value={formData.kelas} placeholder="Otomatis" className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm text-gray-600 dark:text-gray-400 cursor-not-allowed" />
+              <input type="text" readOnly value={formData.kelas} placeholder="Otomatis terisi" className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm text-gray-600 dark:text-gray-400 cursor-not-allowed" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Bulan</label>
