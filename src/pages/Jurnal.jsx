@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Save, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
