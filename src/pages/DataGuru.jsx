@@ -42,7 +42,7 @@ export default function DataGuru() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
-  const [form, setForm] = useState({ nama: '', nip: '', username: '', password: '', kelas: '-' });
+  const [form, setForm] = useState({ nama: '', nip: '', username: '', password: '' });
 
   const filteredData = data.filter(
     (g) => g.nama.toLowerCase().includes(searchTerm.toLowerCase()) || g.nip.includes(searchTerm)
@@ -50,7 +50,7 @@ export default function DataGuru() {
 
   const openAdd = () => {
     setEditItem(null);
-    setForm({ nama: '', nip: '', username: '', password: '', kelas: '-' });
+    setForm({ nama: '', nip: '', username: '', password: '' });
     setShowModal(true);
   };
 
@@ -121,7 +121,6 @@ export default function DataGuru() {
     { label: 'Nama Lengkap' },
     { label: 'NIP' },
     { label: 'Username' },
-    { label: 'Wali Kelas' },
     { label: 'Aksi', className: 'text-right' },
   ];
 
@@ -139,7 +138,6 @@ export default function DataGuru() {
       <td className="px-6 py-4 whitespace-nowrap">
         <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md text-primary font-medium">{guru.username}</code>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{guru.kelas}</td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <div className="flex justify-end gap-2">
           <button onClick={() => openDetail(guru)} className="text-gray-400 hover:text-primary transition-colors p-1" title="Detail"><Eye size={18} /></button>
@@ -198,15 +196,9 @@ export default function DataGuru() {
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Lengkap</label>
                 <input type="text" required placeholder="I Kadek Sukarsa, S.Pd., M.Pd." value={form.nama} onChange={(e) => setForm({...form, nama: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">NIP</label>
-                  <input type="text" required placeholder="198501012010011001" value={form.nip} onChange={(e) => setForm({...form, nip: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Wali Kelas</label>
-                  <input type="text" required placeholder="X MIPA 1" value={form.kelas} onChange={(e) => setForm({...form, kelas: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">NIP</label>
+                <input type="text" required placeholder="198501012010011001" value={form.nip} onChange={(e) => setForm({...form, nip: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -251,11 +243,7 @@ export default function DataGuru() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">NIP: {detailItem.nip}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-y-4 text-sm">
-                <div>
-                  <p className="font-semibold text-gray-700 dark:text-gray-200">Wali Kelas</p>
-                  <p className="text-gray-600 dark:text-gray-400">{detailItem.kelas}</p>
-                </div>
+              <div className="grid grid-cols-1 gap-y-4 text-sm mt-4">
                 <div>
                   <p className="font-semibold text-gray-700 dark:text-gray-200">Username</p>
                   <p className="text-gray-600 dark:text-gray-400">@{detailItem.username}</p>

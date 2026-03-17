@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Plus, Search, Eye, Edit, Trash2, Upload, X, Save, Filter } from 'lucide-react';
+import ExcelJS from 'exceljs';
 
 export default function DataSiswa() {
   const [data, setData] = useState(() => {
@@ -110,23 +111,55 @@ export default function DataSiswa() {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Simulate reading file and adding some students
-      const importedData = [
-        { id: Date.now() + 1, nisn: `00${Math.floor(10000000 + Math.random() * 90000000)}`, name: `Siswa Import ${Date.now()}`, class: 'X MIPA 1', gender: 'L' },
-      ];
-      
-      const newData = [...importedData, ...data];
-      setData(newData);
-      localStorage.setItem('dataSiswa', JSON.stringify(newData));
-      
-      // Auto-add new classes
-      syncNewClasses(importedData);
-      
-      alert(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`);
-      e.target.value = null;
+      try {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(file);
+        const worksheet = workbook.worksheets[0];
+        
+        const importedData = [];
+        let isHeader = true;
+        
+        worksheet.eachRow((row, rowNumber) => {
+          if (isHeader) {
+            isHeader = false; // Skip the first header row
+            return;
+          }
+          
+          // Screenshot columns: 1: NISN, 2: Nama Lengkap, 3: Jenis Kelamin, 4: Kelas
+          const nisn = row.getCell(1).value?.toString().trim() || '';
+          const name = row.getCell(2).value?.toString().trim() || '';
+          const gender = row.getCell(3).value?.toString().trim() || 'L';
+          const kelas = row.getCell(4).value?.toString().trim() || 'Unassigned';
+
+          if (name) {
+            importedData.push({
+              id: Date.now() + Math.random(),
+              nisn: nisn,
+              name: name,
+              gender: gender,
+              class: kelas
+            });
+          }
+        });
+
+        if (importedData.length > 0) {
+          const newData = [...importedData, ...data];
+          setData(newData);
+          localStorage.setItem('dataSiswa', JSON.stringify(newData));
+          syncNewClasses(importedData);
+          alert(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`);
+        } else {
+          alert("File kosong atau tidak terbaca.");
+        }
+      } catch (error) {
+        console.error("Error reading file:", error);
+        alert("Gagal membaca file Excel. Pastikan formatnya berekstensi .xlsx");
+      } finally {
+        e.target.value = null;
+      }
     }
   };
 
