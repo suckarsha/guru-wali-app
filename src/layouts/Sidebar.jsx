@@ -67,7 +67,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </div>
         </div>
 
-        <nav className="p-4 space-y-0.5 mt-1 overflow-y-auto" style={{ height: 'calc(100vh - 140px)' }}>
+        <nav className="p-4 space-y-0.5 mt-1 overflow-y-auto scrollbar-hide" style={{ height: 'calc(100vh - 140px)' }}>
           {menuItems.map((item, index) => {
             if (item.type === 'label') {
               return (
