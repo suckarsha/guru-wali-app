@@ -84,6 +84,11 @@ export default function DataGuru() {
       delete submitForm.password;
     }
     
+    // Prevent unique constraint error for NIP
+    if (!submitForm.nip || submitForm.nip.trim() === '' || submitForm.nip.trim() === '-') {
+      submitForm.nip = null;
+    }
+    
     // Default role for DataGuru form is 'guru'
     submitForm.role = 'guru';
     
