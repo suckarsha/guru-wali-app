@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import Table from '../components/Table';
-import { Filter, Download, FileSpreadsheet } from 'lucide-react';
+import { Filter, Download, FileSpreadsheet, X } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -19,6 +19,8 @@ export default function DataBimbingan() {
   const [filterBulan, setFilterBulan] = useState('Semua');
   const [filterMurid, setFilterMurid] = useState('Semua');
   const [chartMurid, setChartMurid] = useState('');
+  const [selectedJurnal, setSelectedJurnal] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('jurnalData');
@@ -101,7 +103,11 @@ export default function DataBimbingan() {
   ];
 
   const renderRow = (j) => (
-    <tr key={j.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+    <tr 
+      key={j.id} 
+      onClick={() => { setSelectedJurnal(j); setShowModal(true); }}
+      className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
+    >
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
         <div>{j.tanggal}</div>
         <div className="text-xs text-gray-400">{j.waktu}</div>
@@ -274,6 +280,54 @@ export default function DataBimbingan() {
       </div>
 
       <Table headers={headers} data={filteredData} renderRow={renderRow} />
+
+      {/* Modal Detail Jurnal */}
+      {showModal && selectedJurnal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Detail Bimbingan</h3>
+                <p className="text-sm text-gray-500">{selectedJurnal.tanggal} • {selectedJurnal.waktu}</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{selectedJurnal.murid}</h4>
+                  <p className="text-sm text-gray-500">{selectedJurnal.kelas}</p>
+                </div>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-md ${getJenisColor(selectedJurnal.jenis)}`}>{selectedJurnal.jenis}</span>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Topik / Permasalahan</label>
+                <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  {selectedJurnal.topik}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tindak Lanjut</label>
+                <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  {selectedJurnal.tindakLanjut}
+                </div>
+              </div>
+
+              <div className="mt-4 text-xs text-gray-500 text-right">
+                Dicatat oleh: {selectedJurnal.guru || 'Sistem'}
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end shrink-0">
+              <button onClick={() => setShowModal(false)} className="px-5 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
