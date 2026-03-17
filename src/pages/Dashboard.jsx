@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
-import { Users, GraduationCap, BookOpen, AlertCircle } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [bimbinganCount, setBimbinganCount] = useState(0);
+  const [totalGuru, setTotalGuru] = useState(0);
   const [totalSiswa, setTotalSiswa] = useState(0);
   const [totalKelas, setTotalKelas] = useState(0);
   const [totalJurnal, setTotalJurnal] = useState(0);
@@ -15,6 +17,16 @@ export default function Dashboard() {
     try {
       const savedBimbingan = localStorage.getItem('selectedMuridBimbingan');
       if (savedBimbingan) setBimbinganCount(JSON.parse(savedBimbingan).length);
+
+      // Fetch Total Guru from Supabase
+      const fetchTotalGuru = async () => {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'guru');
+        if (!error && count !== null) setTotalGuru(count);
+      };
+      fetchTotalGuru();
 
       const savedSiswa = localStorage.getItem('dataSiswa');
       if (savedSiswa) setTotalSiswa(JSON.parse(savedSiswa).length);
@@ -33,6 +45,7 @@ export default function Dashboard() {
   }, []);
 
   const adminStats = [
+    { title: 'Total Guru', value: totalGuru.toString(), icon: <UserCircle size={24} />, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
     { title: 'Total Siswa', value: totalSiswa.toString(), icon: <Users size={24} />, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
     { title: 'Total Kelas', value: totalKelas.toString(), icon: <GraduationCap size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
     { title: 'Jurnal Masuk', value: totalJurnal.toString(), icon: <BookOpen size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
