@@ -84,9 +84,10 @@ export default function DataGuru() {
       delete submitForm.password;
     }
     
-    // Prevent unique constraint error for NIP
+    // Prevent unique & not-null constraint errors for NIP
     if (!submitForm.nip || submitForm.nip.trim() === '' || submitForm.nip.trim() === '-') {
-      submitForm.nip = null;
+      // Create a unique placeholder that won't trigger UNIQUE violation, but satisfies NOT NULL
+      submitForm.nip = `NON_ASN_${Math.floor(Math.random() * 1000000)}`;
     }
     
     // Default role for DataGuru form is 'guru'
