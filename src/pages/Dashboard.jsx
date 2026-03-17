@@ -14,6 +14,9 @@ export default function Dashboard() {
   const [pengumuman, setPengumuman] = useState([]);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  const [kehadiranSiswa, setKehadiranSiswa] = useState('100%');
+  const [perluPerhatian, setPerluPerhatian] = useState(0);
 
   useEffect(() => {
     try {
@@ -39,6 +42,40 @@ export default function Dashboard() {
       const savedJurnal = localStorage.getItem('jurnalData');
       if (savedJurnal) setTotalJurnal(JSON.parse(savedJurnal).length);
 
+      // Fetch Kehadiran Data for Guru stats
+      const savedKehadiran = localStorage.getItem('kehadiranData') || localStorage.getItem('dataKehadiranSiswa');
+      if (savedKehadiran) {
+        const parsedKehadiran = JSON.parse(savedKehadiran);
+        if (parsedKehadiran.length > 0) {
+          let totalSakit = 0, totalIzin = 0, totalTk = 0;
+          let muridKritis = new Set();
+          
+          parsedKehadiran.forEach(k => {
+            const sakit = Number(k.sakit) || 0;
+            const izin = Number(k.izin) || 0;
+            const tk = k.tk !== undefined ? Number(k.tk) : (Number(k.tanpaKeterangan) || 0);
+            
+            totalSakit += sakit;
+            totalIzin += izin;
+            totalTk += tk;
+            
+            // Mark student as needing attention if they have "Tanpa Keterangan" > 0
+            if (tk > 0) muridKritis.add(k.murid || k.namaMurid);
+          });
+          
+          // Calculate percentage (assuming 26 effective days per tracked month-record)
+          const totalHariEfektif = parsedKehadiran.length * 26;
+          const totalAbsen = totalSakit + totalIzin + totalTk;
+          const totalHadir = totalHariEfektif - totalAbsen;
+          
+          if (totalHariEfektif > 0) {
+            const pct = Math.round((totalHadir / totalHariEfektif) * 100);
+            setKehadiranSiswa(`${pct}%`);
+          }
+          setPerluPerhatian(muridKritis.size);
+        }
+      }
+
       const savedPengumuman = localStorage.getItem('dataPengumuman');
       if (savedPengumuman) setPengumuman(JSON.parse(savedPengumuman).slice(0, 3)); // Top 3
     } catch (e) {
@@ -56,8 +93,8 @@ export default function Dashboard() {
   const guruStats = [
     { title: 'Murid Bimbingan', value: bimbinganCount.toString(), icon: <Users size={24} />, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
     { title: 'Jurnal Saya', value: totalJurnal.toString(), icon: <BookOpen size={24} />, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
-    { title: 'Kehadiran Siswa', value: '100%', icon: <GraduationCap size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-    { title: 'Perlu Perhatian', value: '0', icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
+    { title: 'Kehadiran Siswa', value: kehadiranSiswa, icon: <GraduationCap size={24} />, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { title: 'Perlu Perhatian', value: perluPerhatian.toString(), icon: <AlertCircle size={24} />, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' },
   ];
 
   const stats = user?.role === 'admin' ? adminStats : guruStats;
@@ -65,7 +102,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader 
-        title={`Selamat Datang, ${user?.username || 'User'}! 👋`}
+        title={`Selamat Datang, ${user?.nama || user?.username || 'User'}! 👋`}
         breadcrumbs={[
           { label: 'Aplikasi Guru Wali' },
           { label: 'Dashboard' }
