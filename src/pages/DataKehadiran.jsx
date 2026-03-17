@@ -16,9 +16,16 @@ export default function DataKehadiran() {
 
   useEffect(() => {
     // We get Kehadiran data from localStorage for Demo (typically fetched from backend)
-    const saved = localStorage.getItem('dataKehadiranSiswa');
+    const saved = localStorage.getItem('kehadiranData') || localStorage.getItem('dataKehadiranSiswa');
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed = JSON.parse(saved).map(k => ({
+        ...k,
+        murid: k.namaMurid || k.murid || 'Unknown',
+        tk: k.tk !== undefined ? k.tk : (k.tanpaKeterangan || 0),
+        sakit: k.sakit || 0,
+        izin: k.izin || 0,
+        jumlah: k.jumlah || 0
+      }));
       setDataKehadiran(parsed);
       if (parsed.length > 0) setChartMurid(parsed[0].murid);
     }

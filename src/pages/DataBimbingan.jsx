@@ -23,7 +23,11 @@ export default function DataBimbingan() {
   useEffect(() => {
     const saved = localStorage.getItem('jurnalData');
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed = JSON.parse(saved).map(j => ({
+        ...j,
+        jenis: j.jenis || j.jenisBimbingan || 'Lainnya',
+        tanggal: j.tanggal || new Date().toISOString().split('T')[0]
+      }));
       setDataJurnal(parsed);
       if (parsed.length > 0) setChartMurid(parsed[0].murid);
     }
@@ -83,6 +87,7 @@ export default function DataBimbingan() {
   const gradient = segments.length > 0 ? `conic-gradient(${segments.join(', ')})` : 'conic-gradient(#e5e7eb 0% 100%)';
 
   const getJenisColor = (jenis) => {
+    if (!jenis) return 'bg-gray-100 text-gray-700';
     const found = jenisConfig.find(jc => jenis.includes(jc.label) || jenis === jc.key);
     return found?.badge || 'bg-gray-100 text-gray-700';
   };
