@@ -1,0 +1,276 @@
+import { useState, useEffect } from 'react';
+import PageHeader from '../components/PageHeader';
+import Table from '../components/Table';
+import { Filter, Download, FileSpreadsheet } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
+const dummyJurnal = [
+  { id: 1, tanggal: '2026-03-15', waktu: '08:30', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Nilai Matematika menurun di UTS', tindakLanjut: 'Diskusi strategi belajar dan jadwal les' },
+  { id: 2, tanggal: '2026-03-14', waktu: '10:00', murid: 'Siti Aminah', kelas: 'X IPA 1', jenis: 'Pengembangan Karakter', topik: 'Sering terlambat masuk kelas', tindakLanjut: 'Koordinasi dengan orang tua' },
+  { id: 3, tanggal: '2026-03-12', waktu: '13:00', murid: 'Dewi Lestari', kelas: 'X IPA 1', jenis: 'Pengembangan Kompetensi', topik: 'Minat mengikuti olimpiade sains', tindakLanjut: 'Daftarkan ke program bimbingan olimpiade' },
+  { id: 4, tanggal: '2026-03-10', waktu: '09:15', murid: 'Ayu Wulandari', kelas: 'X IPA 1', jenis: 'Pengembangan Keterampilan', topik: 'Kurang percaya diri saat presentasi', tindakLanjut: 'Latihan presentasi mingguan' },
+  { id: 5, tanggal: '2026-03-08', waktu: '08:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pengembangan Karakter', topik: 'Perilaku kurang sopan ke teman', tindakLanjut: 'Sesi konseling ringan' },
+  { id: 6, tanggal: '2026-03-05', waktu: '11:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pengembangan Kompetensi', topik: 'Bakat di bidang robotik', tindakLanjut: 'Arahkan ke ekskul robotik' },
+  { id: 7, tanggal: '2026-03-03', waktu: '14:00', murid: 'Siti Aminah', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Kesulitan memahami fisika', tindakLanjut: 'Koordinasi dengan guru fisika' },
+  { id: 8, tanggal: '2026-03-01', waktu: '09:00', murid: 'Ahmad Budi Santoso', kelas: 'X IPA 1', jenis: 'Pendampingan Akademik', topik: 'Review jadwal belajar', tindakLanjut: 'Susun jadwal mingguan baru' },
+];
+
+const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+const jenisConfig = [
+  { key: 'Pendampingan Akademik', label: 'Akademik', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  { key: 'Pengembangan Kompetensi', label: 'Kompetensi', color: '#8b5cf6', bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+  { key: 'Pengembangan Keterampilan', label: 'Keterampilan', color: '#10b981', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  { key: 'Pengembangan Karakter', label: 'Karakter', color: '#ef4444', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+];
+
+export default function DataBimbingan() {
+  const [filterBulan, setFilterBulan] = useState('Semua');
+  const [filterMurid, setFilterMurid] = useState('Semua');
+  const [chartMurid, setChartMurid] = useState(dummyJurnal[0]?.murid || '');
+
+  // Load Admin Settings
+  const [settings, setSettings] = useState({
+    namaSekolah: 'SMA NEGERI 1 DENPASAR',
+    kopSurat1: 'PEMERINTAH PROVINSI BALI',
+    kopSurat2: 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
+    alamat: 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233\nTelepon: (0361) 222539 | Website: www.sman1denpasar.sch.id',
+    kota: 'Denpasar',
+    logo: null
+  });
+
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  const muridNames = ['Semua', ...new Set(dummyJurnal.map(j => j.murid))];
+  const chartMuridNames = [...new Set(dummyJurnal.map(j => j.murid))];
+
+  const filteredData = dummyJurnal.filter(j => {
+    // Determine month string of jurnal
+    const monthIndex = parseInt(j.tanggal.split('-')[1], 10);
+    const jMonth = bulanList[monthIndex]; // Assuming month is 1-indexed and matches list starting at index 1
+
+    const matchBulan = filterBulan === 'Semua' || jMonth === filterBulan;
+    const matchMurid = filterMurid === 'Semua' || j.murid === filterMurid;
+    return matchBulan && matchMurid;
+  });
+
+  // Donut chart data for selected student
+  const studentJurnal = dummyJurnal.filter(j => j.murid === chartMurid);
+  const total = studentJurnal.length;
+  const counts = jenisConfig.map(jc => ({
+    ...jc,
+    count: studentJurnal.filter(j => j.jenis === jc.key).length,
+  }));
+
+  // Build conic-gradient
+  const segments = [];
+  let cursor = 0;
+  counts.forEach(c => {
+    if (c.count > 0) {
+      const pct = Math.round((c.count / total) * 100);
+      segments.push(`${c.color} ${cursor}% ${cursor + pct}%`);
+      cursor += pct;
+    }
+  });
+  if (cursor < 100 && segments.length > 0) {
+    segments[segments.length - 1] = segments[segments.length - 1].replace(/\d+%$/, '100%');
+  }
+  const gradient = segments.length > 0 ? `conic-gradient(${segments.join(', ')})` : 'conic-gradient(#e5e7eb 0% 100%)';
+
+  const getJenisColor = (jenis) => {
+    const found = jenisConfig.find(jc => jenis.includes(jc.label) || jenis === jc.key);
+    return found?.badge || 'bg-gray-100 text-gray-700';
+  };
+
+  const headers = [
+    { label: 'Tanggal' },
+    { label: 'Murid' },
+    { label: 'Jenis' },
+    { label: 'Topik' },
+    { label: 'Tindak Lanjut' },
+  ];
+
+  const renderRow = (j) => (
+    <tr key={j.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+        <div>{j.tanggal}</div>
+        <div className="text-xs text-gray-400">{j.waktu}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{j.murid}</span>
+        <div className="text-xs text-gray-400">{j.kelas}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2.5 py-1 text-xs font-semibold rounded-md ${getJenisColor(j.jenis)}`}>{j.jenis}</span>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{j.topik}</td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{j.tindakLanjut}</td>
+    </tr>
+  );
+
+  const handleDownloadExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data Bimbingan Jurnal');
+
+    // KOP SURAT
+    worksheet.mergeCells('A1', 'G1');
+    worksheet.getCell('A1').value = settings.kopSurat1 || 'PEMERINTAH PROVINSI BALI';
+    worksheet.getCell('A1').font = { name: 'Arial', size: 12, bold: true };
+    worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.mergeCells('A2', 'G2');
+    worksheet.getCell('A2').value = settings.kopSurat2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA';
+    worksheet.getCell('A2').font = { name: 'Arial', size: 11, bold: true };
+    worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.mergeCells('A3', 'G3');
+    worksheet.getCell('A3').value = settings.namaSekolah || 'SMA NEGERI 1 DENPASAR';
+    worksheet.getCell('A3').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
+    worksheet.getCell('A3').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    const addressLines = (settings.alamat || '').replace(/\n/g, ' - ');
+    worksheet.mergeCells('A4', 'G4');
+    worksheet.getCell('A4').value = addressLines;
+    worksheet.getCell('A4').font = { name: 'Arial', size: 10 };
+    worksheet.getCell('A4').alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+
+    // Line separator
+    worksheet.mergeCells('A5', 'G5');
+    worksheet.getCell('A5').border = { bottom: { style: 'medium' } };
+
+    worksheet.addRow([]); // empty row / padding
+
+    // Title setup
+    worksheet.mergeCells('A7', 'G7');
+    worksheet.getCell('A7').value = 'LAPORAN JURNAL GURU WALI';
+    worksheet.getCell('A7').font = { name: 'Arial', size: 14, bold: true };
+    worksheet.getCell('A7').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.mergeCells('A8', 'G8');
+    worksheet.getCell('A8').value = `Periode Bulan: ${filterBulan === 'Semua' ? 'Keseluruhan' : filterBulan} | Murid: ${filterMurid}`;
+    worksheet.getCell('A8').font = { name: 'Arial', size: 11, italic: true };
+    worksheet.getCell('A8').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.addRow([]); // empty row
+
+    // Table Header
+    const headerRow = worksheet.addRow(['No', 'Tanggal', 'Waktu', 'Nama Murid', 'Kelas', 'Jenis Bimbingan', 'Topik / Tindak Lanjut']);
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+      cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+
+    // Data Rows
+    filteredData.forEach((j, idx) => {
+      const row = worksheet.addRow([
+        idx + 1,
+        j.tanggal,
+        j.waktu,
+        j.murid,
+        j.kelas,
+        j.jenis,
+        `Topik: ${j.topik}\nTindak Lanjut: ${j.tindakLanjut}`
+      ]);
+      row.height = 40;
+      row.eachCell((cell, colNumber) => {
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        cell.alignment = { vertical: 'top', horizontal: colNumber === 1 ? 'center' : 'left', wrapText: true };
+      });
+    });
+
+    // Column widths
+    worksheet.getColumn(1).width = 5;
+    worksheet.getColumn(2).width = 15;
+    worksheet.getColumn(3).width = 10;
+    worksheet.getColumn(4).width = 25;
+    worksheet.getColumn(5).width = 10;
+    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(7).width = 50;
+
+    // Generate blob and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const dataBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const fileName = `Data_Bimbingan_${filterMurid === 'Semua' ? 'Keseluruhan' : filterMurid.replace(/\s+/g,'_')}.xlsx`;
+    saveAs(dataBlob, fileName);
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="Data Bimbingan"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Data' },
+          { label: 'Data Bimbingan' },
+        ]}
+        actions={
+          <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm">
+            <FileSpreadsheet size={18} />
+            Export Excel
+          </button>
+        }
+      />
+
+      {/* Donut Chart Card */}
+      <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white">Grafik Jenis Bimbingan</h3>
+          <select value={chartMurid} onChange={(e) => setChartMurid(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors w-full sm:w-auto">
+            {chartMuridNames.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-8">
+          {/* Donut */}
+          <div className="relative w-48 h-48 flex-shrink-0">
+            <div className="w-full h-full rounded-full" style={{ background: gradient }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-28 h-28 rounded-full bg-white dark:bg-surface-dark flex flex-col items-center justify-center shadow-inner">
+                <span className="text-3xl font-bold text-gray-800 dark:text-white">{total}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Jurnal</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex-1 w-full">
+            <p className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{chartMurid}</p>
+            <div className="grid grid-cols-2 gap-4">
+              {counts.map(c => (
+                <div key={c.key} className={`flex items-center gap-3 p-3 ${c.bg} rounded-xl`}>
+                  <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{c.label}</p>
+                    <p className={`text-lg font-bold ${c.text}`}>{c.count} <span className="text-xs font-normal">kali</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <Filter size={18} className="text-gray-400" />
+        <select value={filterBulan} onChange={(e) => setFilterBulan(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
+          {bulanList.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <select value={filterMurid} onChange={(e) => setFilterMurid(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
+          {muridNames.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+
+      <Table headers={headers} data={filteredData} renderRow={renderRow} />
+    </>
+  );
+}
+
