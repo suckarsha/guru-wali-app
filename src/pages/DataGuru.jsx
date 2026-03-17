@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useToast } from '../context/ToastContext';
 import Table from '../components/Table';
 import { Plus, Eye, Edit, Trash2, Search, X, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -22,19 +23,23 @@ export default function DataGuru() {
 
   const fetchGurus = async () => {
     setLoading(true);
-    const { data: gurus, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'guru')
-      .order('nama', { ascending: true });
-      
-    if (error) {
-      console.error("Error fetching gurus:", error);
-      alert("Gagal memuat data guru.");
-    } else {
+    try {
+      const { data: gurus, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'guru')
+        .order('nama', { ascending: true });
+        
+      if (error) {
+        throw error;
+      }
       setData(gurus || []);
+    } catch (error) {
+      console.error("Error fetching gurus:", error);
+      showToast("Gagal memuat data guru.", 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,12 +72,16 @@ export default function DataGuru() {
 
   const handleDelete = async (id) => {
     if (confirm('Yakin ingin menghapus data guru ini?')) {
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
-      if (error) {
-        console.error("Error deleting guru:", error);
-        alert("Gagal menghapus guru.");
-      } else {
+      try {
+        const { error } = await supabase.from('profiles').delete().eq('id', id);
+        if (error) {
+          throw error;
+        }
         setData(data.filter(d => d.id !== id));
+        showToast("Data guru berhasil dihapus.", 'success');
+      } catch (error) {
+        console.error("Error deleting guru:", error);
+        showToast("Gagal menghapus guru.", 'error');
       }
     }
   };
@@ -94,31 +103,39 @@ export default function DataGuru() {
     submitForm.role = 'guru';
     
     if (editItem) {
-      const { error } = await supabase
-        .from('profiles')
-        .update(submitForm)
-        .eq('id', editItem.id);
-        
-      if (error) {
-        console.error("Error updating guru:", error);
-        alert("Gagal memperbarui data guru.");
-      } else {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update(submitForm)
+          .eq('id', editItem.id);
+          
+        if (error) {
+          throw error;
+        }
         setData(data.map(d => d.id === editItem.id ? { ...d, ...submitForm } : d));
+        showToast("Data guru berhasil diperbarui.", 'success');
         setShowModal(false);
+      } catch (error) {
+        console.error("Error updating guru:", error);
+        showToast("Gagal memperbarui data guru.", 'error');
       }
     } else {
-      // Need a UUID for new users since we are bypassing Auth
-      submitForm.id = crypto.randomUUID();
-      const { error } = await supabase
-        .from('profiles')
-        .insert([submitForm]);
-        
-      if (error) {
-        console.error("Error adding guru:", error);
-        alert(`Gagal menambahkan data guru.\n\nDetail error: ${error.message}\nKode: ${error.code}`);
-      } else {
+      try {
+        // Need a UUID for new users since we are bypassing Auth
+        submitForm.id = crypto.randomUUID();
+        const { error } = await supabase
+          .from('profiles')
+          .insert([submitForm]);
+          
+        if (error) {
+          throw error;
+        }
         setData([submitForm, ...data]);
+        showToast("Data guru berhasil ditambahkan.", 'success');
         setShowModal(false);
+      } catch (error) {
+        console.error("Error adding guru:", error);
+        showToast(`Gagal menambahkan data guru.\n\nDetail error: ${error.message}\nKode: ${error.code}`, 'error');
       }
     }
   };

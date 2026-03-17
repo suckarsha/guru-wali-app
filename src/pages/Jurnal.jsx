@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useToast } from '../context/ToastContext';
 import { Save, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Jurnal() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     murid: '', tanggal: '', kelas: '', jenisBimbingan: '', topik: '', tindakLanjut: '',
   });
@@ -38,7 +40,7 @@ export default function Jurnal() {
     const upatedJurnals = [newJurnal, ...existingJurnals];
     localStorage.setItem('jurnalData', JSON.stringify(upatedJurnals));
     
-    alert('Jurnal berhasil disimpan!');
+    showToast('Jurnal berhasil disimpan!', 'success');
     setFormData({ murid: '', tanggal: '', kelas: '', jenisBimbingan: '', topik: '', tindakLanjut: '' });
   };
 

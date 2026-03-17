@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import Table from '../components/Table';
-import { Filter, Download, FileSpreadsheet } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -11,8 +12,13 @@ const TOTAL_HARI = 26; // hari efektif per bulan
 export default function DataKehadiran() {
   const [dataKehadiran, setDataKehadiran] = useState([]);
   const [filterBulan, setFilterBulan] = useState('Semua');
-  const [filterMurid, setFilterMurid] = useState('Semua'); // 'Semua' or specific student
+  const [filterMurid, setFilterMurid] = useState('Semua');
   const [chartMurid, setChartMurid] = useState('');
+  const [selectedKehadiran, setSelectedKehadiran] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const { showToast } = useToast();
 
   useEffect(() => {
     // We get Kehadiran data from localStorage for Demo (typically fetched from backend)
@@ -86,7 +92,11 @@ export default function DataKehadiran() {
   ];
 
   const renderRow = (k) => (
-    <tr key={k.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+    <tr 
+      key={k.id} 
+      onClick={() => { setSelectedKehadiran(k); setShowModal(true); }}
+      className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
+    >
       <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">{k.murid}</td>
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{k.kelas}</td>
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{k.bulan}</td>
@@ -289,6 +299,118 @@ export default function DataKehadiran() {
       </div>
 
       <Table headers={headers} data={filteredData} renderRow={renderRow} />
+
+      {/* Detail Modal */}
+      {showModal && selectedKehadiran && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Detail Kehadiran</h3>
+                <p className="text-sm text-gray-500">{selectedKehadiran.bulan}</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div>
+                <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{selectedKehadiran.murid}</h4>
+                <p className="text-sm text-gray-500">{selectedKehadiran.kelas}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                  <div className="w-4 h-4 rounded-full bg-amber-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Sakit</p>
+                    <p className="text-lg font-bold text-amber-600">{selectedKehadiran.sakit} <span className="text-xs font-normal">hari</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Izin</p>
+                    <p className="text-lg font-bold text-blue-600">{selectedKehadiran.izin} <span className="text-xs font-normal">hari</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                  <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tanpa Keterangan</p>
+                    <p className="text-lg font-bold text-red-600">{selectedKehadiran.tk} <span className="text-xs font-normal">hari</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                  <div className="w-4 h-4 rounded-full bg-gray-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Tidak Hadir</p>
+                    <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{selectedKehadiran.jumlah} <span className="text-xs font-normal">hari</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-between shrink-0">
+              <div className="flex gap-2">
+                <button onClick={() => { setEditMode(true); setEditForm({...selectedKehadiran}); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 transition-colors"><Edit size={15} /> Edit</button>
+                <button onClick={() => {
+                  if (confirm('Yakin ingin menghapus data kehadiran ini?')) {
+                    const updated = dataKehadiran.filter(k => k.id !== selectedKehadiran.id);
+                    setDataKehadiran(updated);
+                    localStorage.setItem('kehadiranData', JSON.stringify(updated));
+                    setShowModal(false);
+                    showToast('Data kehadiran berhasil dihapus', 'success');
+                  }
+                }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 transition-colors"><Trash2 size={15} /> Hapus</button>
+              </div>
+              <button onClick={() => { setShowModal(false); setEditMode(false); }} className="px-5 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editMode && editForm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setEditMode(false)} />
+          <div className="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white">Edit Kehadiran</h3>
+              <button onClick={() => setEditMode(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const sakit = Number(editForm.sakit) || 0;
+              const izin = Number(editForm.izin) || 0;
+              const tk = Number(editForm.tk) || 0;
+              const updatedEntry = { ...editForm, sakit, izin, tk, jumlah: sakit + izin + tk };
+              const updated = dataKehadiran.map(k => k.id === editForm.id ? updatedEntry : k);
+              setDataKehadiran(updated);
+              localStorage.setItem('kehadiranData', JSON.stringify(updated));
+              setSelectedKehadiran(updatedEntry);
+              setEditMode(false);
+              showToast('Data kehadiran berhasil diperbarui', 'success');
+            }} className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sakit</label>
+                  <input type="number" min="0" value={editForm.sakit || 0} onChange={(e) => setEditForm({...editForm, sakit: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Izin</label>
+                  <input type="number" min="0" value={editForm.izin || 0} onChange={(e) => setEditForm({...editForm, izin: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">TK (Alpa)</label>
+                  <input type="number" min="0" value={editForm.tk || 0} onChange={(e) => setEditForm({...editForm, tk: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-3">
+                <button type="button" onClick={() => setEditMode(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
+                <button type="submit" className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-sm shadow-primary/20 transition-colors"><Save size={16} /> Simpan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

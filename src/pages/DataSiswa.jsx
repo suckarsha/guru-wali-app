@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useToast } from '../context/ToastContext';
 import { Plus, Search, Eye, Edit, Trash2, Upload, X, Save, Filter } from 'lucide-react';
 import ExcelJS from 'exceljs';
 
@@ -12,6 +13,8 @@ export default function DataSiswa() {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('Semua Kelas');
   const [selectedIds, setSelectedIds] = useState([]);
+  
+  const { showToast } = useToast();
 
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -150,13 +153,13 @@ export default function DataSiswa() {
           setData(newData);
           localStorage.setItem('dataSiswa', JSON.stringify(newData));
           syncNewClasses(importedData);
-          alert(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`);
+          showToast(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`, 'success');
         } else {
-          alert("File kosong atau tidak terbaca.");
+          showToast("File kosong atau tidak terbaca.", 'error');
         }
       } catch (error) {
         console.error("Error reading file:", error);
-        alert("Gagal membaca file Excel. Pastikan formatnya berekstensi .xlsx");
+        showToast("Gagal membaca file Excel. Pastikan formatnya berekstensi .xlsx", 'error');
       } finally {
         e.target.value = null;
       }

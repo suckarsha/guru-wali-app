@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useToast } from '../context/ToastContext';
 import { Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,6 +8,7 @@ const bulanList = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agu
 
 export default function RekapKehadiran() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [muridBimbingan, setMuridBimbingan] = useState([]);
   const [formData, setFormData] = useState({
     murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0,
@@ -30,9 +32,9 @@ export default function RekapKehadiran() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validate that a murid is selected
-    if (!formData.murid) {
-      alert("Pilih murid bimbingan terlebih dahulu");
+    // Validate that a murid and month are selected
+    if (!formData.murid || !formData.bulan) {
+      showToast('Pilih murid dan bulan terlebih dahulu', 'error');
       return;
     }
 
@@ -52,7 +54,7 @@ export default function RekapKehadiran() {
     const updatedRecords = [newRecord, ...existingRecords];
     localStorage.setItem('kehadiranData', JSON.stringify(updatedRecords));
     
-    alert('Rekap kehadiran berhasil disimpan!');
+    showToast('Rekap kehadiran berhasil disimpan!', 'success');
     setFormData({ murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0 });
   };
 
