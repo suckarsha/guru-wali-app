@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import Table from '../components/Table';
 import { Plus, Eye, Edit, Trash2, Search, X, Save } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const initialGuru = [
   { id: 1, nama: 'I Kadek Sukarsa, S.Pd., M.Pd.', nip: '198501012010011001', username: 'kadeksukarsa', kelas: 'X MIPA 1' },
@@ -12,18 +13,29 @@ const initialGuru = [
 ];
 
 export default function DataGuru() {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('dataGuru');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    localStorage.setItem('dataGuru', JSON.stringify(initialGuru));
-    return initialGuru;
-  });
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('dataGuru', JSON.stringify(data));
-  }, [data]);
+    fetchGurus();
+  }, []);
+
+  const fetchGurus = async () => {
+    setLoading(true);
+    const { data: gurus, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'guru')
+      .order('nama', { ascending: true });
+      
+    if (error) {
+      console.error("Error fetching gurus:", error);
+      alert("Gagal memuat data guru.");
+    } else {
+      setData(gurus || []);
+    }
+    setLoading(false);
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -53,25 +65,56 @@ export default function DataGuru() {
     setShowDetailModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Yakin ingin menghapus data guru ini?')) {
-      setData(data.filter(d => d.id !== id));
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) {
+        console.error("Error deleting guru:", error);
+        alert("Gagal menghapus guru.");
+      } else {
+        setData(data.filter(d => d.id !== id));
+      }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const submitForm = { ...form };
     if (editItem && !submitForm.password) {
       delete submitForm.password;
     }
     
+    // Default role for DataGuru form is 'guru'
+    submitForm.role = 'guru';
+    
     if (editItem) {
-      setData(data.map(d => d.id === editItem.id ? { ...d, ...submitForm } : d));
+      const { error } = await supabase
+        .from('profiles')
+        .update(submitForm)
+        .eq('id', editItem.id);
+        
+      if (error) {
+        console.error("Error updating guru:", error);
+        alert("Gagal memperbarui data guru.");
+      } else {
+        setData(data.map(d => d.id === editItem.id ? { ...d, ...submitForm } : d));
+        setShowModal(false);
+      }
     } else {
-      setData([{ id: Date.now(), ...submitForm }, ...data]);
+      // Need a UUID for new users since we are bypassing Auth
+      submitForm.id = crypto.randomUUID();
+      const { error } = await supabase
+        .from('profiles')
+        .insert([submitForm]);
+        
+      if (error) {
+        console.error("Error adding guru:", error);
+        alert("Gagal menambahkan data guru. Pastikan Username tidak ada yang sama.");
+      } else {
+        setData([submitForm, ...data]);
+        setShowModal(false);
+      }
     }
-    setShowModal(false);
   };
 
   const headers = [
@@ -133,7 +176,11 @@ export default function DataGuru() {
         </div>
       </div>
 
-      <Table headers={headers} data={filteredData} renderRow={renderRow} />
+      {loading ? (
+        <div className="text-center py-10 text-gray-500">Memuat data guru...</div>
+      ) : (
+        <Table headers={headers} data={filteredData} renderRow={renderRow} />
+      )}
 
       {/* Modal Edit/Add */}
       {showModal && (

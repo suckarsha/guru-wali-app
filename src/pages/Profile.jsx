@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { useAuth } from '../context/AuthContext';
 import { Save, Upload, UserCircle, Trash2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -41,9 +42,71 @@ export default function Profile() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Simulasi: Profil disimpan!\n' + JSON.stringify(formData, null, 2));
+    
+    // Validasi Ganti Password
+    if (formData.passwordLama || formData.passwordBaru) {
+      if (!formData.passwordLama || !formData.passwordBaru) {
+        alert('Harap isi Password Lama dan Password Baru jika ingin mengubah password.');
+        return;
+      }
+
+      // Verify old password from Supabase
+      const { data: currentUser, error: fetchErr } = await supabase
+        .from('profiles')
+        .select('password')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchErr || !currentUser) {
+        alert('Gagal memverifikasi password lama Anda.');
+        return;
+      }
+
+      if (formData.passwordLama !== currentUser.password) {
+        alert('Password Lama salah!');
+        return;
+      }
+
+      // Update password in Supabase
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({ password: formData.passwordBaru })
+        .eq('id', user.id);
+
+      if (updateErr) {
+        console.error("Error updating password:", updateErr);
+        alert('Gagal memperbarui password.');
+        return;
+      }
+    }
+
+    // Update other fields in Supabase if needed (like nama/nip)
+    const updatePayload = {};
+    if (formData.nama !== user?.nama) updatePayload.nama = formData.nama;
+    if (user?.role === 'guru' && formData.nip !== user?.nip) updatePayload.nip = formData.nip;
+
+    if (Object.keys(updatePayload).length > 0) {
+      const { error: profileUpdateErr } = await supabase
+        .from('profiles')
+        .update(updatePayload)
+        .eq('id', user.id);
+        
+       if (profileUpdateErr) {
+         console.error("Error updating profile details:", profileUpdateErr);
+         alert('Berhasil mengubah password, tetapi gagal menyimpan perubahan detail profil lainnya.');
+       }
+    }
+
+    alert('Profil berhasil disimpan!');
+    
+    // Reset field password setelah disimpan
+    setFormData(prev => ({
+      ...prev,
+      passwordLama: '',
+      passwordBaru: ''
+    }));
   };
 
   return (
