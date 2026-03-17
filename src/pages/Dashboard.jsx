@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
-import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle, X } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle, X, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [pengumuman, setPengumuman] = useState([]);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [recentJurnals, setRecentJurnals] = useState([]);
   
   const [kehadiranSiswa, setKehadiranSiswa] = useState('100%');
   const [perluPerhatian, setPerluPerhatian] = useState(0);
@@ -40,7 +41,15 @@ export default function Dashboard() {
       if (savedKelas) setTotalKelas(JSON.parse(savedKelas).length);
 
       const savedJurnal = localStorage.getItem('jurnalData');
-      if (savedJurnal) setTotalJurnal(JSON.parse(savedJurnal).length);
+      if (savedJurnal) {
+        const parsedJurnal = JSON.parse(savedJurnal);
+        setTotalJurnal(parsedJurnal.length);
+        // Get the 5 most recent entries
+        setRecentJurnals(parsedJurnal.slice(0, 5).map(j => ({
+          ...j,
+          jenis: j.jenis || j.jenisBimbingan || 'Lainnya'
+        })));
+      }
 
       // Fetch Kehadiran Data for Guru stats
       const savedKehadiran = localStorage.getItem('kehadiranData') || localStorage.getItem('dataKehadiranSiswa');
@@ -129,9 +138,36 @@ export default function Dashboard() {
         {/* Placeholder for Charts / Lists */}
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 lg:col-span-2 min-h-[400px]">
            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Aktivitas Jurnal Terkini</h3>
-           <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-              <p>Area Grafik/Daftar (Belum Terintegrasi Data)</p>
-           </div>
+           {recentJurnals.length === 0 ? (
+             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+               <BookOpen size={40} className="mb-3 opacity-50" />
+               <p className="text-sm">Belum ada jurnal. Mulai catat bimbingan Anda.</p>
+             </div>
+           ) : (
+             <div className="space-y-3">
+               {recentJurnals.map((j, idx) => (
+                 <div key={j.id || idx} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                   <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary/20 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                     {j.murid ? j.murid.charAt(0) : '?'}
+                   </div>
+                   <div className="flex-1 min-w-0">
+                     <div className="flex items-center justify-between mb-1">
+                       <h4 className="text-sm font-semibold text-gray-800 dark:text-white truncate">{j.murid || 'Unknown'}</h4>
+                       <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0 ml-2"><Calendar size={12} /> {j.tanggal}</span>
+                     </div>
+                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1.5">{j.topik || 'Tidak ada topik'}</p>
+                     <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-md ${
+                       j.jenis?.includes('Akademik') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                       j.jenis?.includes('Kompetensi') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                       j.jenis?.includes('Keterampilan') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                       j.jenis?.includes('Karakter') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                       'bg-gray-100 text-gray-600'
+                     }`}>{j.jenis}</span>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
         </div>
         
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 min-h-[400px]">
