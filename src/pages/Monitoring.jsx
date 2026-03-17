@@ -1,5 +1,6 @@
 import PageHeader from '../components/PageHeader';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const bulanKeys = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
 const MAX_PER_BULAN = 5; // max Sabtu dalam satu bulan
@@ -36,15 +37,29 @@ export default function Monitoring() {
   const [filterGuru, setFilterGuru] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-
   useEffect(() => {
-    const savedGuru = localStorage.getItem('dataGuru');
-    const gurus = savedGuru ? JSON.parse(savedGuru) : [];
-    setDataGuru(gurus);
-    if (gurus.length > 0) setFilterGuru(gurus[0].nama);
+    const fetchData = async () => {
+      // Fetch gurus from supabase
+      const { data: gurus, error: guruError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'guru');
+        
+      if (!guruError && gurus) {
+        // Use 'nama_lengkap' or 'nama', depends on PRD schema it is 'nama_lengkap' but in DataGuru.jsx it uses 'nama'
+        // I will map it safely
+        const validGurus = gurus.map(g => ({ ...g, nama: g.nama || g.nama_lengkap || 'Unknown' }));
+        setDataGuru(validGurus);
+        if (validGurus.length > 0) setFilterGuru(validGurus[0].nama);
+      }
 
-    const savedJurnal = localStorage.getItem('jurnalData');
-    setDataJurnal(savedJurnal ? JSON.parse(savedJurnal) : []);
+      // Fetch jurnal from local storage or supabase (if Jurnal is not yet migrated, we keep localStorage for now)
+      // Todo: eventually migrate Jurnal to Supabase
+      const savedJurnal = localStorage.getItem('jurnalData');
+      setDataJurnal(savedJurnal ? JSON.parse(savedJurnal) : []);
+    };
+    
+    fetchData();
   }, []);
 
   // Compute stats per guru
