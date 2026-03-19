@@ -9,8 +9,7 @@ export const journalService = {
         students (
           name,
           classes ( name )
-        ),
-        auth_users ( email )
+        )
       `)
       .order('tanggal', { ascending: false });
     
@@ -26,7 +25,7 @@ export const journalService = {
       jenis: j.jenis,
       topik: j.topik,
       tindakLanjut: j.tindak_lanjut,
-      guru: j.auth_users?.email || 'Sistem',
+      guru: 'Sistem',
       guru_id: j.guru_id,
       student_id: j.student_id
     }));
@@ -41,7 +40,7 @@ export const journalService = {
       topik: journal.topik,
       tindak_lanjut: journal.tindakLanjut,
       guru_id: journal.guru_id || null // Add if user id is passed
-    }]).select(`*, students(name, classes(name)), auth_users(email)`).single();
+    }]).select(`*, students(name, classes(name))`).single();
 
     if (error) throw error;
     
@@ -54,7 +53,7 @@ export const journalService = {
       jenis: data.jenis,
       topik: data.topik,
       tindakLanjut: data.tindak_lanjut,
-      guru: data.auth_users?.email || 'Sistem',
+      guru: 'Sistem',
       student_id: data.student_id
     };
   },
@@ -66,7 +65,7 @@ export const journalService = {
       jenis: journal.jenis,
       topik: journal.topik,
       tindak_lanjut: journal.tindakLanjut
-    }).eq('id', id).select(`*, students(name, classes(name)), auth_users(email)`).single();
+    }).eq('id', id).select(`*, students(name, classes(name))`).single();
 
     if (error) throw error;
     
@@ -79,7 +78,7 @@ export const journalService = {
       jenis: data.jenis,
       topik: data.topik,
       tindakLanjut: data.tindak_lanjut,
-      guru: data.auth_users?.email || 'Sistem',
+      guru: 'Sistem',
       student_id: data.student_id
     };
   },
