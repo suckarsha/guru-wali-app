@@ -3,15 +3,26 @@ import PageHeader from '../components/PageHeader';
 import { Settings, Trash2, Info, AlertTriangle, Code, Upload, Save, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { settingService } from '../services/settingService';
 
 export default function Pengaturan() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   
-  const [appName, setAppName] = useState(localStorage.getItem('GuruWali_AppName') || 'Guru Wali App.');
-  const [appLogo, setAppLogo] = useState(localStorage.getItem('GuruWali_AppLogo') || '/logo.png');
+  const [appName, setAppName] = useState('Guru Wali App.');
+  const [appLogo, setAppLogo] = useState('/logo.png');
+  const [isSaving, setIsSaving] = useState(false);
   const logoRef = useRef(null);
+
+  useEffect(() => {
+    settingService.getSettings().then(data => {
+      if (data) {
+        setAppName(data.app_name || 'Guru Wali App.');
+        setAppLogo(data.app_logo_url || '/logo.png');
+      }
+    }).catch(console.error);
+  }, []);
 
   const handleClearData = () => {
     if (confirm('PERINGATAN SEVERA!\nSemua data lokal (Siswa Bimbingan, Foto Profil, Pengaturan Tampilan) akan dihapus permanen.\n\nApakah Anda benar-benar yakin?')) {
@@ -34,12 +45,19 @@ export default function Pengaturan() {
     }
   };
 
-  const handleSaveAppConfig = (e) => {
+  const handleSaveAppConfig = async (e) => {
     e.preventDefault();
-    localStorage.setItem('GuruWali_AppName', appName);
-    localStorage.setItem('GuruWali_AppLogo', appLogo);
-    alert('Pengaturan Aplikasi berhasil disimpan! Halaman akan dimuat ulang untuk memperbarui tampilan.');
-    window.location.reload();
+    try {
+      setIsSaving(true);
+      await settingService.updateSettings({ app_name: appName, app_logo_url: appLogo });
+      alert('Pengaturan Aplikasi berhasil disinkronisasi ke server! Halaman akan dimuat ulang untuk memperbarui tampilan.');
+      window.location.reload();
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('Gagal menyimpan pengaturan aplikasi');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -116,8 +134,8 @@ export default function Pengaturan() {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <button type="submit" className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm focus:ring-4 focus:ring-primary/20">
-                    <Save size={18} /> Simpan Tampilan
+                  <button type="submit" disabled={isSaving} className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm focus:ring-4 focus:ring-primary/20 disabled:opacity-50">
+                    <Save size={18} /> {isSaving ? 'Menyimpan...' : 'Simpan Tampilan'}
                   </button>
                 </div>
               </form>

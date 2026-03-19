@@ -1,17 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
+import { settingService } from '../services/settingService';
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
   
   const [appInfo, setAppInfo] = useState({
-    name: localStorage.getItem('GuruWali_AppName') || 'Guru Wali App.',
-    logo: localStorage.getItem('GuruWali_AppLogo') || '/logo.png'
+    name: 'Guru Wali App.',
+    logo: '/logo.png'
   });
+
+  useEffect(() => {
+    if (user) {
+      settingService.getSettings()
+        .then(data => {
+          if (data) {
+            setAppInfo({
+              name: data.app_name || 'Guru Wali App.',
+              logo: data.app_logo_url || '/logo.png'
+            });
+          }
+        })
+        .catch(err => console.error('Failed to load global app settings:', err));
+    }
+  }, [user]);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;

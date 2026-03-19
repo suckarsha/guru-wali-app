@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { UserCircle, Shield, ArrowRight } from 'lucide-react';
+import { settingService } from '../services/settingService';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -13,12 +14,22 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const appName = localStorage.getItem('GuruWali_AppName') || 'Guru Wali App.';
-  const appLogo = localStorage.getItem('GuruWali_AppLogo') || null;
+  const [appInfo, setAppInfo] = useState({ name: 'Guru Wali App.', logo: null });
 
   // Trigger entrance animation on mount
   useEffect(() => {
     setIsVisible(true);
+    // Fetch global app config
+    settingService.getSettings()
+      .then(data => {
+        if (data) {
+          setAppInfo({
+            name: data.app_name || 'Guru Wali App.',
+            logo: data.app_logo_url || null
+          });
+        }
+      })
+      .catch(console.error);
   }, []);
 
   // If already logged in, redirect
@@ -55,15 +66,15 @@ export default function Login() {
         <div className="text-center mb-8">
           {/* Logo Placeholder */}
           <div className="flex items-center justify-center gap-3 mb-6">
-            {appLogo ? (
-              <img src={appLogo} alt="App Logo" className="h-12 w-auto object-contain" />
+            {appInfo.logo ? (
+              <img src={appInfo.logo} alt="App Logo" className="h-12 w-auto object-contain" />
             ) : (
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-2xl shadow-md shadow-primary/30">
                 G
               </div>
             )}
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight leading-tight line-clamp-2">
-              {appName}
+              {appInfo.name}
             </h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-[15px]">

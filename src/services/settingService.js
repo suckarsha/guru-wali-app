@@ -12,7 +12,9 @@ export const settingService = {
         kop_surat_2: 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
         alamat: 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233\nTelepon: (0361) 222539 | Website: www.sman1denpasar.sch.id',
         kota: 'Denpasar',
-        logo_url: null
+        logo_url: null,
+        app_name: 'Guru Wali App.',
+        app_logo_url: null
       };
     }
     
