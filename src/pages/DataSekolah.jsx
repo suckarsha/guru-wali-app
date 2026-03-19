@@ -103,8 +103,8 @@ export default function DataSekolah() {
             <School size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-white">Profil Institusi & Pengaturan Laporan PDF</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Pengaturan informasi sekolah dan logo untuk header laporan PDF.</p>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white">Profil Institusi</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Pengaturan informasi dan identitas sekolah.</p>
           </div>
         </div>
 

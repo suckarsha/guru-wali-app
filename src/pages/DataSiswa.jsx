@@ -53,7 +53,7 @@ export default function DataSiswa() {
 
   const openAdd = () => {
     setEditItem(null);
-    setForm({ nisn: '', name: '', class: 'X IPA 1', gender: 'L' });
+    setForm({ nisn: '', name: '', class: '', gender: 'L' });
     setShowModal(true);
   };
 
@@ -335,7 +335,7 @@ export default function DataSiswa() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Kelas</label>
-                  <input type="text" required value={form.class} onChange={(e) => setForm({...form, class: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                  <input type="text" required placeholder="Contoh: X IPA 1" value={form.class} onChange={(e) => setForm({...form, class: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Jenis Kelamin</label>
