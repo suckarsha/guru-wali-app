@@ -43,7 +43,7 @@ export default function Jurnal() {
       const newJurnal = {
         student_id: formData.student_id,
         tanggal: formData.tanggal,
-        waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':'),
         jenis: formData.jenis,
         topik: formData.topik,
         tindakLanjut: formData.tindakLanjut,
