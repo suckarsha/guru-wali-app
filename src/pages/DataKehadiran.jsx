@@ -6,6 +6,7 @@ import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save } from 'lucide
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { attendanceService } from '../services/attendanceService';
+import { settingService } from '../services/settingService';
 
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const TOTAL_HARI = 26; // hari efektif per bulan
@@ -50,25 +51,7 @@ export default function DataKehadiran() {
     logo: null
   });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const data = await settingService.getSettings();
-      if (data) {
-        setSettings({
-          namaSekolah: data.nama_sekolah || 'SMA NEGERI 1 DENPASAR',
-          kopSurat1: data.kop_surat_1 || 'PEMERINTAH PROVINSI BALI',
-          kopSurat2: data.kop_surat_2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
-          alamat: data.alamat || 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233',
-          kota: data.kota || 'Denpasar',
-          logo: data.logo_url || null
-        });
-      }
-    } catch(err) {}
-  };
+  // Removed useEffect fetchSettings to rely on direct fetch during export
 
   const muridNames = ['Semua', ...new Set(dataKehadiran.map(k => k.murid))];
   const chartMuridNames = [...new Set(dataKehadiran.map(k => k.murid))];
@@ -127,23 +110,38 @@ export default function DataKehadiran() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Rekap Kehadiran');
 
+    // Fetch fresh settings right before export to ensure no dummy data is used
+    let dbSettings = settings;
+    try {
+      const fetched = await settingService.getSettings();
+      if (fetched) {
+        dbSettings = {
+          namaSekolah: fetched.nama_sekolah || 'SMA NEGERI 1 DENPASAR',
+          kopSurat1: fetched.kop_surat_1 || 'PEMERINTAH PROVINSI BALI',
+          kopSurat2: fetched.kop_surat_2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
+          alamat: fetched.alamat || 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233',
+          kota: fetched.kota || 'Denpasar'
+        };
+      }
+    } catch (e) { console.error('Error fetching settings for excel:', e); }
+
     // KOP SURAT
     worksheet.mergeCells('A1', 'H1');
-    worksheet.getCell('A1').value = settings.kopSurat1 || 'PEMERINTAH PROVINSI BALI';
+    worksheet.getCell('A1').value = dbSettings.kopSurat1 || 'PEMERINTAH PROVINSI BALI';
     worksheet.getCell('A1').font = { name: 'Arial', size: 12, bold: true };
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
 
     worksheet.mergeCells('A2', 'H2');
-    worksheet.getCell('A2').value = settings.kopSurat2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA';
+    worksheet.getCell('A2').value = dbSettings.kopSurat2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA';
     worksheet.getCell('A2').font = { name: 'Arial', size: 11, bold: true };
     worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'center' };
 
     worksheet.mergeCells('A3', 'H3');
-    worksheet.getCell('A3').value = settings.namaSekolah || 'SMA NEGERI 1 DENPASAR';
+    worksheet.getCell('A3').value = dbSettings.namaSekolah || 'SMA NEGERI 1 DENPASAR';
     worksheet.getCell('A3').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
     worksheet.getCell('A3').alignment = { vertical: 'middle', horizontal: 'center' };
 
-    const addressLines = (settings.alamat || '').replace(/\n/g, ' - ');
+    const addressLines = (dbSettings.alamat || '').replace(/\n/g, ' - ');
     worksheet.mergeCells('A4', 'H4');
     worksheet.getCell('A4').value = addressLines;
     worksheet.getCell('A4').font = { name: 'Arial', size: 10 };

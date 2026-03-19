@@ -27,6 +27,8 @@ export default function MuridBimbingan() {
         studentService.getAll(),
         guidanceService.getByGuru(user.id)
       ]);
+      allSiswa.sort((a, b) => a.name.localeCompare(b.name));
+      bimbinganSiswa.sort((a, b) => a.name.localeCompare(b.name));
       setDataSiswaAwal(allSiswa);
       setSelectedSiswa(bimbinganSiswa);
       setIsLoaded(true);
@@ -79,6 +81,7 @@ export default function MuridBimbingan() {
            kontakOrtu: ''
          };
       });
+      newSelected.sort((a, b) => a.name.localeCompare(b.name));
       setSelectedSiswa(newSelected);
       setShowModal(false);
       showToast('Daftar bimbingan diperbarui!', 'success');
