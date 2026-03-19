@@ -7,6 +7,11 @@ import { useAuth } from '../context/AuthContext';
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
+  
+  const [appInfo, setAppInfo] = useState({
+    name: localStorage.getItem('GuruWali_AppName') || 'Guru Wali App.',
+    logo: localStorage.getItem('GuruWali_AppLogo') || '/logo.png'
+  });
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -19,7 +24,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-200 flex">
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} appInfo={appInfo} />
       
       <div className="md:ml-[270px] flex-1 flex flex-col min-w-0 transition-all duration-300">
         <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />

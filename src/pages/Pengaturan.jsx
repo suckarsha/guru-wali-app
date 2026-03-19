@@ -1,12 +1,17 @@
 import React from 'react';
 import PageHeader from '../components/PageHeader';
-import { Settings, Trash2, Info, AlertTriangle, Code } from 'lucide-react';
+import { Settings, Trash2, Info, AlertTriangle, Code, Upload, Save, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useState, useRef } from 'react';
 
 export default function Pengaturan() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  
+  const [appName, setAppName] = useState(localStorage.getItem('GuruWali_AppName') || 'Guru Wali App.');
+  const [appLogo, setAppLogo] = useState(localStorage.getItem('GuruWali_AppLogo') || '/logo.png');
+  const logoRef = useRef(null);
 
   const handleClearData = () => {
     if (confirm('PERINGATAN SEVERA!\nSemua data lokal (Siswa Bimbingan, Foto Profil, Pengaturan Tampilan) akan dihapus permanen.\n\nApakah Anda benar-benar yakin?')) {
@@ -16,6 +21,25 @@ export default function Pengaturan() {
       navigate('/login');
       window.location.reload();
     }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAppLogo(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAppConfig = (e) => {
+    e.preventDefault();
+    localStorage.setItem('GuruWali_AppName', appName);
+    localStorage.setItem('GuruWali_AppLogo', appLogo);
+    alert('Pengaturan Aplikasi berhasil disimpan! Halaman akan dimuat ulang untuk memperbarui tampilan.');
+    window.location.reload();
   };
 
   return (
@@ -60,18 +84,45 @@ export default function Pengaturan() {
             </div>
           </div>
           
-          {/* Section 2: Placeholder */}
-          <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 opacity-60">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 flex items-center justify-center">
-                <Settings size={20} />
+          {/* Section 2: App Personalization */}
+          {user?.role === 'admin' && (
+            <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary-light dark:bg-primary/20 text-primary flex items-center justify-center">
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">Personalisasi Aplikasi</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Atur logo dan nama aplikasi untuk perangkat ini</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Pengaturan Sinkronisasi (Segera Hadir)</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Fitur sedang dikembangkan oleh pengembang</p>
-              </div>
+              <form onSubmit={handleSaveAppConfig} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Aplikasi</label>
+                  <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} required className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Logo Aplikasi (Sidebar)</label>
+                  <input type="file" ref={logoRef} accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                  <div onClick={() => logoRef.current?.click()} className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-primary dark:hover:border-primary transition-colors cursor-pointer relative overflow-hidden h-32 flex flex-col items-center justify-center">
+                    {appLogo ? (
+                      <img src={appLogo} alt="App Logo" className="absolute inset-0 w-full h-full object-contain p-2" />
+                    ) : (
+                      <>
+                        <Upload size={24} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Klik untuk upload logo resolusi tinggi</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button type="submit" className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm focus:ring-4 focus:ring-primary/20">
+                    <Save size={18} /> Simpan Tampilan
+                  </button>
+                </div>
+              </form>
             </div>
-          </div>
+          )}
 
         </div>
 
@@ -86,7 +137,7 @@ export default function Pengaturan() {
             <div className="space-y-4 text-sm mt-6">
               <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
                 <span className="text-gray-500 dark:text-gray-400">Nama Aplikasi</span>
-                <span className="font-bold text-gray-800 dark:text-gray-200 text-right">Guru Wali App</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200 text-right">{appName}</span>
               </div>
               <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
                 <span className="text-gray-500 dark:text-gray-400">Versi</span>

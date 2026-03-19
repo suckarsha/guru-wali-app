@@ -193,7 +193,7 @@ export default function DataBimbingan() {
     worksheet.addRow([]); // empty row
 
     // Table Header
-    const headerRow = worksheet.addRow(['No', 'Tanggal', 'Waktu', 'Nama Murid', 'Kelas', 'Jenis Bimbingan', 'Topik / Tindak Lanjut']);
+    const headerRow = worksheet.addRow(['No', 'Tanggal', 'Waktu', 'Nama Murid', 'Kelas', 'Jenis Bimbingan', 'Topik Permasalahan', 'Tindak Lanjut']);
     headerRow.eachCell((cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
       cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
@@ -210,7 +210,8 @@ export default function DataBimbingan() {
         j.murid,
         j.kelas,
         j.jenis,
-        `Topik: ${j.topik}\nTindak Lanjut: ${j.tindakLanjut}`
+        j.topik,
+        j.tindakLanjut
       ]);
       row.height = 40;
       row.eachCell((cell, colNumber) => {
@@ -226,7 +227,8 @@ export default function DataBimbingan() {
     worksheet.getColumn(4).width = 25;
     worksheet.getColumn(5).width = 10;
     worksheet.getColumn(6).width = 25;
-    worksheet.getColumn(7).width = 50;
+    worksheet.getColumn(7).width = 40;
+    worksheet.getColumn(8).width = 40;
 
     // Generate blob and download
     const buffer = await workbook.xlsx.writeBuffer();
