@@ -14,7 +14,10 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const [appInfo, setAppInfo] = useState({ name: 'Guru Wali App.', logo: null });
+  const [appInfo, setAppInfo] = useState({ 
+    name: localStorage.getItem('GuruWali_AppName_Cache') || 'Guru Wali App.', 
+    logo: localStorage.getItem('GuruWali_AppLogo_Cache') || null 
+  });
 
   // Trigger entrance animation on mount
   useEffect(() => {
@@ -23,10 +26,12 @@ export default function Login() {
     settingService.getSettings()
       .then(data => {
         if (data) {
-          setAppInfo({
-            name: data.app_name || 'Guru Wali App.',
-            logo: data.app_logo_url || null
-          });
+          const fetchedName = data.app_name || 'Guru Wali App.';
+          const fetchedLogo = data.app_logo_url || null;
+          setAppInfo({ name: fetchedName, logo: fetchedLogo });
+          localStorage.setItem('GuruWali_AppName_Cache', fetchedName);
+          if (fetchedLogo) localStorage.setItem('GuruWali_AppLogo_Cache', fetchedLogo);
+          else localStorage.removeItem('GuruWali_AppLogo_Cache');
         }
       })
       .catch(console.error);

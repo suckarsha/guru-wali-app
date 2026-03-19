@@ -10,8 +10,8 @@ export default function MainLayout() {
   const { user, loading } = useAuth();
   
   const [appInfo, setAppInfo] = useState({
-    name: 'Guru Wali App.',
-    logo: '/logo.png'
+    name: localStorage.getItem('GuruWali_AppName_Cache') || 'Guru Wali App.',
+    logo: localStorage.getItem('GuruWali_AppLogo_Cache') || '/logo.png'
   });
 
   useEffect(() => {
@@ -19,10 +19,11 @@ export default function MainLayout() {
       settingService.getSettings()
         .then(data => {
           if (data) {
-            setAppInfo({
-              name: data.app_name || 'Guru Wali App.',
-              logo: data.app_logo_url || '/logo.png'
-            });
+            const fetchedName = data.app_name || 'Guru Wali App.';
+            const fetchedLogo = data.app_logo_url || '/logo.png';
+            setAppInfo({ name: fetchedName, logo: fetchedLogo });
+            localStorage.setItem('GuruWali_AppName_Cache', fetchedName);
+            localStorage.setItem('GuruWali_AppLogo_Cache', fetchedLogo);
           }
         })
         .catch(err => console.error('Failed to load global app settings:', err));

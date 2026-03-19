@@ -50,6 +50,11 @@ export default function Pengaturan() {
     try {
       setIsSaving(true);
       await settingService.updateSettings({ app_name: appName, app_logo_url: appLogo });
+      
+      localStorage.setItem('GuruWali_AppName_Cache', appName);
+      if (appLogo) localStorage.setItem('GuruWali_AppLogo_Cache', appLogo);
+      else localStorage.removeItem('GuruWali_AppLogo_Cache');
+
       alert('Pengaturan Aplikasi berhasil disinkronisasi ke server! Halaman akan dimuat ulang untuk memperbarui tampilan.');
       window.location.reload();
     } catch (error) {
