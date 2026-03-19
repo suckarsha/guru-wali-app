@@ -212,20 +212,20 @@ export default function DataGuru() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Lengkap</label>
-                <input type="text" required placeholder="I Kadek Sukarsa, S.Pd., M.Pd." value={form.nama} onChange={(e) => setForm({...form, nama: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                <input type="text" required value={form.nama} onChange={(e) => setForm({...form, nama: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">NIP <span className="text-gray-400 font-normal">(opsional)</span></label>
-                <input type="text" placeholder="kosongkan saja" value={form.nip} onChange={(e) => setForm({...form, nip: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                <input type="text" value={form.nip} onChange={(e) => setForm({...form, nip: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Username</label>
-                  <input type="text" required placeholder="kadeksukarsa" value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                  <input type="text" required value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Password {!editItem && '*'}</label>
-                  <input type="password" required={!editItem} placeholder={editItem ? "(Kosongkan jika tak diubah)" : "••••••••"} value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
+                  <input type="password" required={!editItem} placeholder={editItem ? "(Kosongkan jika tak diubah)" : ""} value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-3">
