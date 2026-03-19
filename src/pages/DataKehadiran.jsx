@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { attendanceService } from '../services/attendanceService';
 
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const TOTAL_HARI = 26; // hari efektif per bulan
@@ -20,22 +21,24 @@ export default function DataKehadiran() {
   const [editForm, setEditForm] = useState({});
   const { showToast } = useToast();
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    // We get Kehadiran data from localStorage for Demo (typically fetched from backend)
-    const saved = localStorage.getItem('kehadiranData') || localStorage.getItem('dataKehadiranSiswa');
-    if (saved) {
-      const parsed = JSON.parse(saved).map(k => ({
-        ...k,
-        murid: k.namaMurid || k.murid || 'Unknown',
-        tk: k.tk !== undefined ? k.tk : (k.tanpaKeterangan || 0),
-        sakit: k.sakit || 0,
-        izin: k.izin || 0,
-        jumlah: k.jumlah || 0
-      }));
-      setDataKehadiran(parsed);
-      if (parsed.length > 0) setChartMurid(parsed[0].murid);
-    }
+    fetchKehadiran();
   }, []);
+
+  const fetchKehadiran = async () => {
+    try {
+      setIsLoading(true);
+      const summaries = await attendanceService.getMonthlySummaries('Semua');
+      setDataKehadiran(summaries);
+      if (summaries.length > 0) setChartMurid(summaries[0].murid);
+    } catch (error) {
+      showToast('Gagal memuat data kehadiran', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load Admin Settings
   const [settings, setSettings] = useState({
@@ -48,11 +51,24 @@ export default function DataKehadiran() {
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('adminSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const data = await settingService.getSettings();
+      if (data) {
+        setSettings({
+          namaSekolah: data.nama_sekolah || 'SMA NEGERI 1 DENPASAR',
+          kopSurat1: data.kop_surat_1 || 'PEMERINTAH PROVINSI BALI',
+          kopSurat2: data.kop_surat_2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
+          alamat: data.alamat || 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233',
+          kota: data.kota || 'Denpasar',
+          logo: data.logo_url || null
+        });
+      }
+    } catch(err) {}
+  };
 
   const muridNames = ['Semua', ...new Set(dataKehadiran.map(k => k.murid))];
   const chartMuridNames = [...new Set(dataKehadiran.map(k => k.murid))];
@@ -351,13 +367,17 @@ export default function DataKehadiran() {
             <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-between shrink-0">
               <div className="flex gap-2">
                 <button onClick={() => { setEditMode(true); setEditForm({...selectedKehadiran}); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 transition-colors"><Edit size={15} /> Edit</button>
-                <button onClick={() => {
-                  if (confirm('Yakin ingin menghapus data kehadiran ini?')) {
-                    const updated = dataKehadiran.filter(k => k.id !== selectedKehadiran.id);
-                    setDataKehadiran(updated);
-                    localStorage.setItem('kehadiranData', JSON.stringify(updated));
-                    setShowModal(false);
-                    showToast('Data kehadiran berhasil dihapus', 'success');
+                <button onClick={async () => {
+                  if (confirm('Yakin ingin menghapus rekap kehadiran ini?')) {
+                    try {
+                      await attendanceService.deleteMonthlySummary(selectedKehadiran.bulan, selectedKehadiran.student_id);
+                      const updated = dataKehadiran.filter(k => k.id !== selectedKehadiran.id);
+                      setDataKehadiran(updated);
+                      setShowModal(false);
+                      showToast('Data kehadiran berhasil dihapus', 'success');
+                    } catch (error) {
+                      showToast('Gagal menghapus data kehadiran', 'error');
+                    }
                   }
                 }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 transition-colors"><Trash2 size={15} /> Hapus</button>
               </div>
@@ -376,18 +396,23 @@ export default function DataKehadiran() {
               <h3 className="text-lg font-bold text-gray-800 dark:text-white">Edit Kehadiran</h3>
               <button onClick={() => setEditMode(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
               const sakit = Number(editForm.sakit) || 0;
               const izin = Number(editForm.izin) || 0;
               const tk = Number(editForm.tk) || 0;
-              const updatedEntry = { ...editForm, sakit, izin, tk, jumlah: sakit + izin + tk };
-              const updated = dataKehadiran.map(k => k.id === editForm.id ? updatedEntry : k);
-              setDataKehadiran(updated);
-              localStorage.setItem('kehadiranData', JSON.stringify(updated));
-              setSelectedKehadiran(updatedEntry);
-              setEditMode(false);
-              showToast('Data kehadiran berhasil diperbarui', 'success');
+              
+              try {
+                await attendanceService.saveMonthlySummary(editForm.bulan, editForm.student_id, sakit, izin, tk);
+                const updatedEntry = { ...editForm, sakit, izin, tk, jumlah: sakit + izin + tk };
+                const updated = dataKehadiran.map(k => k.id === editForm.id ? updatedEntry : k);
+                setDataKehadiran(updated);
+                setSelectedKehadiran(updatedEntry);
+                setEditMode(false);
+                showToast('Data kehadiran berhasil diperbarui', 'success');
+              } catch (error) {
+                showToast('Gagal memperbarui kehadiran', 'error');
+              }
             }} className="p-6 space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">

@@ -1,16 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Plus, Edit, Trash2, X, Save, Megaphone } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { announcementService } from '../services/announcementService';
 
 export default function KelolaPengumuman() {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('dataPengumuman');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
+  const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ judul: '', isi: '', tanggal: '', prioritas: 'biasa' });
+  const [isLoading, setIsLoading] = useState(true);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    fetchPengumuman();
+  }, []);
+
+  const fetchPengumuman = async () => {
+    try {
+      setIsLoading(true);
+      const announcements = await announcementService.getAll();
+      const mapped = announcements.map(a => ({
+        id: a.id,
+        judul: a.title,
+        isi: a.content,
+        tanggal: a.date,
+        prioritas: a.type
+      }));
+      setData(mapped);
+    } catch (error) {
+      showToast('Gagal memuat pengumuman', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const openAdd = () => {
     setEditItem(null);
@@ -24,25 +47,41 @@ export default function KelolaPengumuman() {
     setShowModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Yakin ingin menghapus pengumuman ini?')) {
-      const newData = data.filter(d => d.id !== id);
-      setData(newData);
-      localStorage.setItem('dataPengumuman', JSON.stringify(newData));
+      try {
+        await announcementService.delete(id);
+        setData(data.filter(d => d.id !== id));
+        showToast('Pengumuman berhasil dihapus', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus pengumuman', 'error');
+      }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    let newData;
-    if (editItem) {
-      newData = data.map(d => d.id === editItem.id ? { ...d, ...form } : d);
-    } else {
-      newData = [{ id: Date.now(), ...form }, ...data];
+    try {
+      const payload = {
+        title: form.judul,
+        content: form.isi,
+        date: form.tanggal,
+        type: form.prioritas
+      };
+
+      if (editItem) {
+        const updated = await announcementService.update(editItem.id, payload);
+        setData(data.map(d => d.id === editItem.id ? { id: updated.id, judul: updated.title, isi: updated.content, tanggal: updated.date, prioritas: updated.type } : d));
+        showToast('Pengumuman berhasil diperbarui', 'success');
+      } else {
+        const created = await announcementService.create(payload);
+        setData([{ id: created.id, judul: created.title, isi: created.content, tanggal: created.date, prioritas: created.type }, ...data]);
+        showToast('Pengumuman berhasil dibuat', 'success');
+      }
+      setShowModal(false);
+    } catch (error) {
+      showToast('Gagal menyimpan pengumuman', 'error');
     }
-    setData(newData);
-    localStorage.setItem('dataPengumuman', JSON.stringify(newData));
-    setShowModal(false);
   };
 
   const getPrioritasStyle = (p) => {
@@ -72,34 +111,39 @@ export default function KelolaPengumuman() {
 
       {/* Pengumuman Cards */}
       <div className="space-y-4">
-        {data.length === 0 && (
+        {isLoading ? (
+          <div className="bg-white dark:bg-surface-dark rounded-2xl p-12 shadow-soft-sm border border-gray-100 dark:border-gray-800 text-center">
+            <p className="text-gray-500 dark:text-gray-400">Memuat pengumuman...</p>
+          </div>
+        ) : data.length === 0 ? (
           <div className="bg-white dark:bg-surface-dark rounded-2xl p-12 shadow-soft-sm border border-gray-100 dark:border-gray-800 text-center">
             <Megaphone size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-gray-500 dark:text-gray-400">Belum ada pengumuman. Klik tombol di atas untuk membuat.</p>
           </div>
-        )}
-        {data.map((item) => (
-          <div key={item.id} className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-[16px] font-bold text-gray-800 dark:text-white">{item.judul}</h3>
-                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md ${getPrioritasStyle(item.prioritas)}`}>
-                  {item.prioritas}
-                </span>
+        ) : (
+          data.map((item) => (
+            <div key={item.id} className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-[16px] font-bold text-gray-800 dark:text-white">{item.judul}</h3>
+                  <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md ${getPrioritasStyle(item.prioritas)}`}>
+                    {item.prioritas}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">{item.isi}</p>
+                <p className="text-xs text-gray-400">Dipublikasikan: {item.tanggal}</p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">{item.isi}</p>
-              <p className="text-xs text-gray-400">Dipublikasikan: {item.tanggal}</p>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button onClick={() => openEdit(item)} className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Edit">
+                  <Edit size={18} />
+                </button>
+                <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Hapus">
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => openEdit(item)} className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Edit">
-                <Edit size={18} />
-              </button>
-              <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Hapus">
-                <Trash2 size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Modal */}

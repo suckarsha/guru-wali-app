@@ -1,16 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Users, Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import { classService } from '../services/classService';
+import { useToast } from '../context/ToastContext';
 
 export default function Kelas() {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('dataKelas');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
+  const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ name: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      setIsLoading(true);
+      const classes = await classService.getAll();
+      setData(classes);
+    } catch (error) {
+      showToast('Gagal memuat data kelas', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const openAdd = () => {
     setEditItem(null);
@@ -24,25 +40,34 @@ export default function Kelas() {
     setShowModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Yakin ingin menghapus data kelas ini?')) {
-      const newData = data.filter(d => d.id !== id);
-      setData(newData);
-      localStorage.setItem('dataKelas', JSON.stringify(newData));
+      try {
+        await classService.delete(id);
+        setData(data.filter(d => d.id !== id));
+        showToast('Kelas berhasil dihapus', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus kelas. Pastikan kelas tidak digunakan data siswa.', 'error');
+      }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    let newData;
-    if (editItem) {
-      newData = data.map(d => d.id === editItem.id ? { ...d, name: form.name } : d);
-    } else {
-      newData = [{ id: Date.now(), name: form.name }, ...data];
+    try {
+      if (editItem) {
+        const updated = await classService.update(editItem.id, form.name);
+        setData(data.map(d => d.id === editItem.id ? updated : d));
+        showToast('Kelas berhasil diperbarui', 'success');
+      } else {
+        const newlyCreated = await classService.create(form.name);
+        setData([...data, newlyCreated]);
+        showToast('Kelas berhasil ditambahkan', 'success');
+      }
+      setShowModal(false);
+    } catch (error) {
+      showToast('Gagal menyimpan kelas', 'error');
     }
-    setData(newData);
-    localStorage.setItem('dataKelas', JSON.stringify(newData));
-    setShowModal(false);
   };
 
   return (
@@ -62,29 +87,30 @@ export default function Kelas() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.length === 0 && (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {isLoading ? (
+          <div className="col-span-full py-10 text-center text-gray-500">
+            Memuat data...
+          </div>
+        ) : data.length === 0 ? (
           <div className="col-span-full py-10 text-center text-gray-500">
             Belum ada data kelas. Kelas akan otomatis terekam saat Anda mengimpor data siswa yang memiliki entri kelas.
           </div>
-        )}
-        {data.map((kelas) => (
-          <div key={kelas.id} className="bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-soft-sm hover:shadow-soft-md transition-shadow relative group">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">{kelas.name}</h3>
-              </div>
-              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(kelas)} className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Edit">
-                  <Edit size={16} />
-                </button>
-                <button onClick={() => handleDelete(kelas.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Hapus">
-                  <Trash2 size={16} />
-                </button>
-              </div>
+        ) : (
+          [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((kelas) => (
+          <div key={kelas.id} className="bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-soft-sm hover:shadow-soft-md transition-shadow relative group flex flex-col justify-center items-center h-28">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{kelas.name}</h3>
+            <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity absolute bottom-2">
+              <button onClick={() => openEdit(kelas)} className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Edit">
+                <Edit size={16} />
+              </button>
+              <button onClick={() => handleDelete(kelas.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Hapus">
+                <Trash2 size={16} />
+              </button>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {showModal && (

@@ -1,15 +1,13 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import PageHeader from '../components/PageHeader';
 import { useToast } from '../context/ToastContext';
 import { Plus, Search, Eye, Edit, Trash2, Upload, X, Save, Filter } from 'lucide-react';
 import ExcelJS from 'exceljs';
+import { studentService } from '../services/studentService';
 
 export default function DataSiswa() {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('dataSiswa');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
+  const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('Semua Kelas');
   const [selectedIds, setSelectedIds] = useState([]);
@@ -20,9 +18,26 @@ export default function DataSiswa() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
-  const [form, setForm] = useState({ nisn: '', name: '', class: 'X IPA 1', gender: 'L' });
+  const formDefault = { nisn: '', name: '', class: '', gender: 'L' };
+  const [form, setForm] = useState(formDefault);
   
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      setIsLoading(true);
+      const students = await studentService.getAll();
+      setData(students);
+    } catch (error) {
+      showToast('Gagal memuat data siswa', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const classes = useMemo(() => {
     return ['Semua Kelas', ...new Set(data.map(s => s.class))];
@@ -53,21 +68,29 @@ export default function DataSiswa() {
     setShowDetailModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Yakin ingin menghapus data siswa ini?')) {
-      const newData = data.filter(d => d.id !== id);
-      setData(newData);
-      localStorage.setItem('dataSiswa', JSON.stringify(newData));
-      setSelectedIds(selectedIds.filter(selId => selId !== id));
+      try {
+        await studentService.delete(id);
+        setData(data.filter(d => d.id !== id));
+        setSelectedIds(selectedIds.filter(selId => selId !== id));
+        showToast('Data siswa berhasil dihapus', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus data siswa', 'error');
+      }
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (confirm(`Yakin ingin menghapus ${selectedIds.length} data siswa yang dipilih?`)) {
-      const newData = data.filter(d => !selectedIds.includes(d.id));
-      setData(newData);
-      localStorage.setItem('dataSiswa', JSON.stringify(newData));
-      setSelectedIds([]);
+      try {
+        await studentService.bulkDelete(selectedIds);
+        setData(data.filter(d => !selectedIds.includes(d.id)));
+        setSelectedIds([]);
+        showToast('Data siswa berhas dihapus', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus data', 'error');
+      }
     }
   };
 
@@ -91,28 +114,7 @@ export default function DataSiswa() {
     }
   };
 
-  // Helper function to sync new classes to dataKelas
-  const syncNewClasses = (newStudents) => {
-    const savedClasses = localStorage.getItem('dataKelas');
-    let existingClassesData = savedClasses ? JSON.parse(savedClasses) : [];
-    const existingClassNames = new Set(existingClassesData.map(c => c.name));
-    
-    let isAdded = false;
-    newStudents.forEach(siswa => {
-      if (siswa.class && !existingClassNames.has(siswa.class)) {
-        existingClassNames.add(siswa.class);
-        existingClassesData.push({
-          id: Date.now() + Math.random(),
-          name: siswa.class
-        });
-        isAdded = true;
-      }
-    });
 
-    if (isAdded) {
-      localStorage.setItem('dataKelas', JSON.stringify(existingClassesData));
-    }
-  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -149,38 +151,42 @@ export default function DataSiswa() {
         });
 
         if (importedData.length > 0) {
-          const newData = [...importedData, ...data];
-          setData(newData);
-          localStorage.setItem('dataSiswa', JSON.stringify(newData));
-          syncNewClasses(importedData);
-          showToast(`Berhasil mengimpor ${importedData.length} data siswa dari file: ${file.name}`, 'success');
+          try {
+            const insertedData = await studentService.bulkCreate(importedData);
+            setData([...insertedData, ...data]);
+            showToast(`Berhasil mengimpor ${insertedData.length} data siswa dari file: ${file.name}`, 'success');
+          } catch (dbError) {
+            console.error("DB Import Error:", dbError);
+            showToast(`Gagal menyimpan ke database: ${dbError.message || dbError}`, 'error');
+          }
         } else {
           showToast("File kosong atau tidak terbaca.", 'error');
         }
       } catch (error) {
         console.error("Error reading file:", error);
-        showToast("Gagal membaca file Excel. Pastikan formatnya berekstensi .xlsx", 'error');
+        showToast(`Gagal membaca file Excel: ${error.message || error}`, 'error');
       } finally {
         e.target.value = null;
       }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    let newData;
-    if (editItem) {
-      newData = data.map(d => d.id === editItem.id ? { ...d, ...form } : d);
-    } else {
-      newData = [{ id: Date.now(), ...form }, ...data];
+    try {
+      if (editItem) {
+        const updated = await studentService.update(editItem.id, form);
+        setData(data.map(d => d.id === editItem.id ? updated : d));
+        showToast('Data siswa berhasil diperbarui', 'success');
+      } else {
+        const newlyCreated = await studentService.create(form);
+        setData([newlyCreated, ...data]);
+        showToast('Data siswa berhasil ditambahkan', 'success');
+      }
+      setShowModal(false);
+    } catch (error) {
+      showToast('Gagal menyimpan data siswa', 'error');
     }
-    setData(newData);
-    localStorage.setItem('dataSiswa', JSON.stringify(newData));
-    
-    // Auto-add new class
-    syncNewClasses([form]);
-    
-    setShowModal(false);
   };
 
   const allFilteredSelected = filteredData.length > 0 && selectedIds.length === filteredData.length;
@@ -264,7 +270,11 @@ export default function DataSiswa() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filteredData.length > 0 ? filteredData.map((siswa) => (
+              {isLoading ? (
+                <tr>
+                   <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Memuat data...</td>
+                </tr>
+              ) : filteredData.length > 0 ? filteredData.map((siswa) => (
                 <tr key={siswa.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <input type="checkbox" checked={selectedIds.includes(siswa.id)} onChange={() => toggleSelectRow(siswa.id)} className="w-4 h-4 text-primary bg-white border-gray-300 rounded focus:ring-primary cursor-pointer" />

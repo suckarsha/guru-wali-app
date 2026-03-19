@@ -3,6 +3,8 @@ import PageHeader from '../components/PageHeader';
 import { useToast } from '../context/ToastContext';
 import { Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { attendanceService } from '../services/attendanceService';
+import { guidanceService } from '../services/guidanceService';
 
 const bulanList = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -10,16 +12,20 @@ export default function RekapKehadiran() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [muridBimbingan, setMuridBimbingan] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0,
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('selectedMuridBimbingan');
-    if (saved) {
-      setMuridBimbingan(JSON.parse(saved));
+    if (user?.id) {
+      guidanceService.getByGuru(user.id).then(data => {
+        setMuridBimbingan(data);
+      }).catch(err => {
+        showToast('Gagal memuat daftar murid bimbingan', 'error');
+      });
     }
-  }, []);
+  }, [user]);
 
   const jumlah = Number(formData.sakit) + Number(formData.izin) + Number(formData.tanpaKeterangan);
 
@@ -29,7 +35,7 @@ export default function RekapKehadiran() {
     setFormData({ ...formData, murid: muridId, kelas: murid?.class || '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate that a murid and month are selected
@@ -38,24 +44,23 @@ export default function RekapKehadiran() {
       return;
     }
 
-    const savedRecords = localStorage.getItem('kehadiranData');
-    const existingRecords = savedRecords ? JSON.parse(savedRecords) : [];
-    
-    const muridDetail = muridBimbingan.find(m => String(m.id) === String(formData.murid));
-    
-    const newRecord = {
-      ...formData,
-      id: Date.now(),
-      namaMurid: muridDetail?.name || 'Unknown',
-      guru: user?.nama || 'Unknown',
-      jumlah: jumlah
-    };
-    
-    const updatedRecords = [newRecord, ...existingRecords];
-    localStorage.setItem('kehadiranData', JSON.stringify(updatedRecords));
-    
-    showToast('Rekap kehadiran berhasil disimpan!', 'success');
-    setFormData({ murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0 });
+    try {
+      setIsSubmitting(true);
+      await attendanceService.saveMonthlySummary(
+        formData.bulan,
+        formData.murid, // this is the student_id
+        Number(formData.sakit),
+        Number(formData.izin),
+        Number(formData.tanpaKeterangan)
+      );
+      
+      showToast('Rekap kehadiran berhasil disimpan!', 'success');
+      setFormData({ murid: '', kelas: '', bulan: '', sakit: 0, izin: 0, tanpaKeterangan: 0 });
+    } catch (error) {
+      showToast('Gagal menyimpan rekap kehadiran', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -121,9 +126,9 @@ export default function RekapKehadiran() {
           </div>
 
           <div className="pt-4 flex justify-end">
-            <button type="submit" className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md shadow-primary/20 focus:ring-4 focus:ring-primary/20">
+            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md shadow-primary/20 focus:ring-4 focus:ring-primary/20 disabled:opacity-50">
               <Save size={18} />
-              Simpan Rekap
+              {isSubmitting ? 'Menyimpan...' : 'Simpan Rekap'}
             </button>
           </div>
         </form>

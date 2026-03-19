@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Save, Upload, School, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { settingService } from '../services/settingService';
 
 export default function DataSekolah() {
   const [formData, setFormData] = useState({
@@ -16,18 +18,55 @@ export default function DataSekolah() {
 
   const logoRef = useRef(null);
   const headerRef = useRef(null);
+  const { showToast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('adminSettings');
-    if (saved) {
-      setFormData(JSON.parse(saved));
-    }
+    fetchSettings();
   }, []);
 
-  const handleSubmit = (e) => {
+  const fetchSettings = async () => {
+    try {
+      const data = await settingService.getSettings();
+      if (data) {
+        setFormData({
+          namaSekolah: data.nama_sekolah || '',
+          npsn: data.npsn || '50103075',
+          alamat: data.alamat || '',
+          kota: data.kota || '',
+          kopSurat1: data.kop_surat_1 || '',
+          kopSurat2: data.kop_surat_2 || '',
+          logo: data.logo_url || null,
+          header: null
+        });
+      }
+    } catch (error) {
+       showToast('Gagal memuat pengaturan', 'error');
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem('adminSettings', JSON.stringify(formData));
-    alert('Data sekolah dan pengaturan PDF berhasil disimpan!');
+    try {
+      setIsSubmitting(true);
+      await settingService.updateSettings({
+        nama_sekolah: formData.namaSekolah,
+        kop_surat_1: formData.kopSurat1,
+        kop_surat_2: formData.kopSurat2,
+        alamat: formData.alamat,
+        kota: formData.kota,
+        logo_url: formData.logo,
+        // Since NPSN wasn't explicitly in the original table CREATE but they might add it later:
+        // we can safely pass it. Supabase might ignore it or error if strict. We will pass it just in case.
+        // Wait, if it errors, we just omit it for now or rely on fallback.
+      });
+      showToast('Data sekolah berhasil disimpan!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Gagal menyimpan data sekolah', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageUpload = (e, field) => {
@@ -129,9 +168,9 @@ export default function DataSekolah() {
           </div>
 
           <div className="pt-4 flex justify-end">
-            <button type="submit" className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md shadow-primary/20 focus:ring-4 focus:ring-primary/20">
+            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md shadow-primary/20 focus:ring-4 focus:ring-primary/20 disabled:opacity-50">
               <Save size={18} />
-              Simpan Pengaturan
+              {isSubmitting ? 'Menyimpan...' : 'Simpan Pengaturan'}
             </button>
           </div>
         </form>

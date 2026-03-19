@@ -1,38 +1,41 @@
 import { useState, useMemo, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import { Search, Plus, Trash2, X, Filter, Eye, Edit, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { studentService } from '../services/studentService';
+import { guidanceService } from '../services/guidanceService';
 
 export default function MuridBimbingan() {
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const [dataSiswaAwal, setDataSiswaAwal] = useState([]);
   const [selectedSiswa, setSelectedSiswa] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load main data siswa
-    const savedAllSiswa = localStorage.getItem('dataSiswa');
-    if (savedAllSiswa) {
-      setDataSiswaAwal(JSON.parse(savedAllSiswa));
+    if (user?.id) {
+      fetchData();
     }
+  }, [user]);
 
-    // Load selected bimbingan students
-    const savedSelected = localStorage.getItem('selectedMuridBimbingan');
-    if (savedSelected) {
-      try {
-        setSelectedSiswa(JSON.parse(savedSelected));
-      } catch(e) {
-        setSelectedSiswa([]);
-      }
-    } else {
-      setSelectedSiswa([]);
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [allSiswa, bimbinganSiswa] = await Promise.all([
+        studentService.getAll(),
+        guidanceService.getByGuru(user.id)
+      ]);
+      setDataSiswaAwal(allSiswa);
+      setSelectedSiswa(bimbinganSiswa);
+      setIsLoaded(true);
+    } catch (error) {
+       showToast('Gagal memuat data murid', 'error');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('selectedMuridBimbingan', JSON.stringify(selectedSiswa));
-    }
-  }, [selectedSiswa, isLoaded]);
+  };
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -57,15 +60,31 @@ export default function MuridBimbingan() {
     setShowModal(true);
   };
 
-  const handleSaveSelection = () => {
-    // Keep existing items if already selected to preserve edits like kontakOrtu
-    const newSelected = tempSelection.map(id => {
-       const existing = selectedSiswa.find(s => s.id === id);
-       if (existing) return existing;
-       return dataSiswaAwal.find(s => s.id === id);
-    });
-    setSelectedSiswa(newSelected);
-    setShowModal(false);
+  const handleSaveSelection = async () => {
+    try {
+      const currentIds = selectedSiswa.map(s => s.id);
+      const added = tempSelection.filter(id => !currentIds.includes(id));
+      const removed = currentIds.filter(id => !tempSelection.includes(id));
+
+      await Promise.all([
+        ...added.map(id => guidanceService.toggleGuidance(user.id, id, true)),
+        ...removed.map(id => guidanceService.toggleGuidance(user.id, id, false))
+      ]);
+
+      const newSelected = tempSelection.map(id => {
+         const existing = selectedSiswa.find(s => s.id === id);
+         if (existing) return existing;
+         return {
+           ...dataSiswaAwal.find(s => s.id === id),
+           kontakOrtu: ''
+         };
+      });
+      setSelectedSiswa(newSelected);
+      setShowModal(false);
+      showToast('Daftar bimbingan diperbarui!', 'success');
+    } catch (error) {
+      showToast('Gagal menyimpan pilihan', 'error');
+    }
   };
 
   const toggleModalSelect = (id) => {
@@ -74,9 +93,15 @@ export default function MuridBimbingan() {
     );
   };
 
-  const removeSiswa = (id) => {
+  const removeSiswa = async (id) => {
     if(confirm('Hapus siswa dari daftar bimbingan Anda?')) {
-      setSelectedSiswa(prev => prev.filter(s => s.id !== id));
+      try {
+        await guidanceService.toggleGuidance(user.id, id, false);
+        setSelectedSiswa(prev => prev.filter(s => s.id !== id));
+        showToast('Siswa dihapus dari daftar bimbingan', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus siswa', 'error');
+      }
     }
   };
 
@@ -91,12 +116,18 @@ export default function MuridBimbingan() {
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    setSelectedSiswa(prev => 
-      prev.map(s => s.id === activeItem.id ? { ...s, kontakOrtu: editForm.kontakOrtu } : s)
-    );
-    setShowEditModal(false);
+    try {
+      await guidanceService.updateContact(user.id, activeItem.id, editForm.kontakOrtu);
+      setSelectedSiswa(prev => 
+        prev.map(s => s.id === activeItem.id ? { ...s, kontakOrtu: editForm.kontakOrtu } : s)
+      );
+      setShowEditModal(false);
+      showToast('Kontak orang tua diperbarui', 'success');
+    } catch (error) {
+      showToast('Gagal memperbarui kontak', 'error');
+    }
   };
 
   const modalFilteredSiswa = dataSiswaAwal.filter(s => {
@@ -132,8 +163,12 @@ export default function MuridBimbingan() {
 
       {/* Main Selected Students List */}
       <div className="bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 rounded-2xl shadow-soft-sm overflow-hidden min-h-[300px]">
-        {selectedSiswa.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center h-full">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center h-[300px]">
+            <p className="text-gray-500 dark:text-gray-400">Memuat data...</p>
+          </div>
+        ) : selectedSiswa.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center h-[300px]">
             <div className="bg-gray-50 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-gray-400">
                <Search size={24} />
             </div>

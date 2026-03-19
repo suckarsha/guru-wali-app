@@ -5,17 +5,12 @@ import Table from '../components/Table';
 import { Plus, Eye, Edit, Trash2, Search, X, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-const initialGuru = [
-  { id: 1, nama: 'I Kadek Sukarsa, S.Pd., M.Pd.', nip: '198501012010011001', username: 'kadeksukarsa', kelas: 'X MIPA 1' },
-  { id: 2, nama: 'Ni Luh Putu Sari, S.Pd.', nip: '198703152012042001', username: 'putusari', kelas: 'XI IPS 1' },
-  { id: 3, nama: 'I Made Budi Artawan, S.Pd.', nip: '199005202014031002', username: 'budiartawan', kelas: 'XII Bahasa' },
-  { id: 4, nama: 'Ni Wayan Rai, S.Pd., M.Pd.', nip: '198209102008042003', username: 'wayanrai', kelas: 'X MIPA 2' },
-  { id: 5, nama: 'I Gede Arya, S.Pd.', nip: '199112252015041001', username: 'gedearya', kelas: 'XI IPS 2' },
-];
+const initialGuru = [];
 
 export default function DataGuru() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchGurus();
@@ -50,7 +45,7 @@ export default function DataGuru() {
   const [form, setForm] = useState({ nama: '', nip: '', username: '', password: '' });
 
   const filteredData = data.filter(
-    (g) => g.nama.toLowerCase().includes(searchTerm.toLowerCase()) || g.nip.includes(searchTerm)
+    (g) => (g.nama || '').toLowerCase().includes(searchTerm.toLowerCase()) || (g.nip || '').includes(searchTerm)
   );
 
   const openAdd = () => {

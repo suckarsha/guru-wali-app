@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { journalService } from '../services/journalService';
 
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -14,6 +15,8 @@ const jenisConfig = [
   { key: 'Pengembangan Keterampilan', label: 'Keterampilan', color: '#10b981', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
   { key: 'Pengembangan Karakter', label: 'Karakter', color: '#ef4444', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 ];
+
+import { settingService } from '../services/settingService';
 
 export default function DataBimbingan() {
   const [dataJurnal, setDataJurnal] = useState([]);
@@ -26,18 +29,41 @@ export default function DataBimbingan() {
   const [editForm, setEditForm] = useState({});
   const { showToast } = useToast();
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    const saved = localStorage.getItem('jurnalData');
-    if (saved) {
-      const parsed = JSON.parse(saved).map(j => ({
-        ...j,
-        jenis: j.jenis || j.jenisBimbingan || 'Lainnya',
-        tanggal: j.tanggal || new Date().toISOString().split('T')[0]
-      }));
-      setDataJurnal(parsed);
-      if (parsed.length > 0) setChartMurid(parsed[0].murid);
-    }
+    fetchJurnals();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const data = await settingService.getSettings();
+      if (data) {
+        setSettings({
+          namaSekolah: data.nama_sekolah || 'SMA NEGERI 1 DENPASAR',
+          kopSurat1: data.kop_surat_1 || 'PEMERINTAH PROVINSI BALI',
+          kopSurat2: data.kop_surat_2 || 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
+          alamat: data.alamat || 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233',
+          kota: data.kota || 'Denpasar',
+          logo: data.logo_url || null
+        });
+      }
+    } catch(err) {}
+  };
+
+  const fetchJurnals = async () => {
+    try {
+      setIsLoading(true);
+      const data = await journalService.getAll();
+      setDataJurnal(data);
+      if (data.length > 0) setChartMurid(data[0].murid);
+    } catch (error) {
+      showToast('Gagal memuat data bimbingan', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load Admin Settings
   const [settings, setSettings] = useState({
@@ -49,12 +75,7 @@ export default function DataBimbingan() {
     logo: null
   });
 
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('adminSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
-  }, []);
+  // Removed redundant localStorage fetch
 
   const muridNames = ['Semua', ...new Set(dataJurnal.map(j => j.murid))];
   const chartMuridNames = [...new Set(dataJurnal.map(j => j.murid))];
@@ -329,13 +350,17 @@ export default function DataBimbingan() {
             <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-between shrink-0">
               <div className="flex gap-2">
                 <button onClick={() => { setEditMode(true); setEditForm({...selectedJurnal}); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 transition-colors"><Edit size={15} /> Edit</button>
-                <button onClick={() => {
+                <button onClick={async () => {
                   if (confirm('Yakin ingin menghapus data bimbingan ini?')) {
-                    const updated = dataJurnal.filter(j => j.id !== selectedJurnal.id);
-                    setDataJurnal(updated);
-                    localStorage.setItem('jurnalData', JSON.stringify(updated));
-                    setShowModal(false);
-                    showToast('Data bimbingan berhasil dihapus', 'success');
+                    try {
+                      await journalService.delete(selectedJurnal.id);
+                      const updated = dataJurnal.filter(j => j.id !== selectedJurnal.id);
+                      setDataJurnal(updated);
+                      setShowModal(false);
+                      showToast('Data bimbingan berhasil dihapus', 'success');
+                    } catch (error) {
+                       showToast('Gagal menghapus data bimbingan', 'error');
+                    }
                   }
                 }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 transition-colors"><Trash2 size={15} /> Hapus</button>
               </div>
@@ -354,14 +379,18 @@ export default function DataBimbingan() {
               <h3 className="text-lg font-bold text-gray-800 dark:text-white">Edit Bimbingan</h3>
               <button onClick={() => setEditMode(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
-              const updated = dataJurnal.map(j => j.id === editForm.id ? { ...j, ...editForm } : j);
-              setDataJurnal(updated);
-              localStorage.setItem('jurnalData', JSON.stringify(updated));
-              setSelectedJurnal(editForm);
-              setEditMode(false);
-              showToast('Data bimbingan berhasil diperbarui', 'success');
+              try {
+                const updatedJurnal = await journalService.update(editForm.id, editForm);
+                const updated = dataJurnal.map(j => j.id === editForm.id ? updatedJurnal : j);
+                setDataJurnal(updated);
+                setSelectedJurnal(updatedJurnal);
+                setEditMode(false);
+                showToast('Data bimbingan berhasil diperbarui', 'success');
+              } catch (error) {
+                showToast('Gagal memperbarui data bimbingan', 'error');
+              }
             }} className="p-6 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Topik / Permasalahan</label>

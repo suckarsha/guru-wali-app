@@ -3,6 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import { Users, GraduationCap, BookOpen, AlertCircle, UserCircle, X, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { guidanceService } from '../services/guidanceService';
+import { studentService } from '../services/studentService';
+import { classService } from '../services/classService';
+import { journalService } from '../services/journalService';
+import { attendanceService } from '../services/attendanceService';
+import { announcementService } from '../services/announcementService';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -20,60 +26,50 @@ export default function Dashboard() {
   const [perluPerhatian, setPerluPerhatian] = useState(0);
 
   useEffect(() => {
-    try {
-      const savedBimbingan = localStorage.getItem('selectedMuridBimbingan');
-      if (savedBimbingan) setBimbinganCount(JSON.parse(savedBimbingan).length);
+    if (!user) return;
+    
+    const fetchAllData = async () => {
+      try {
+        // Fetch Bimbingan Count
+        if (user.role === 'guru') {
+          const bimbingan = await guidanceService.getByGuru(user.id);
+          setBimbinganCount(bimbingan.length);
+        }
 
-      // Fetch Total Guru from Supabase
-      const fetchTotalGuru = async () => {
+        // Fetch Total Guru
         const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('role', 'guru');
         if (!error && count !== null) setTotalGuru(count);
-      };
-      fetchTotalGuru();
 
-      const savedSiswa = localStorage.getItem('dataSiswa');
-      if (savedSiswa) setTotalSiswa(JSON.parse(savedSiswa).length);
+        // Fetch Siswa and Kelas
+        const [siswaRes, kelasRes] = await Promise.all([
+          studentService.getAll(),
+          classService.getAll()
+        ]);
+        setTotalSiswa(siswaRes.length);
+        setTotalKelas(kelasRes.length);
 
-      const savedKelas = localStorage.getItem('dataKelas');
-      if (savedKelas) setTotalKelas(JSON.parse(savedKelas).length);
+        // Fetch Jurnal
+        const jurnalRes = await journalService.getAll();
+        setTotalJurnal(jurnalRes.length);
+        setRecentJurnals(jurnalRes.slice(0, 5));
 
-      const savedJurnal = localStorage.getItem('jurnalData');
-      if (savedJurnal) {
-        const parsedJurnal = JSON.parse(savedJurnal);
-        setTotalJurnal(parsedJurnal.length);
-        // Get the 5 most recent entries
-        setRecentJurnals(parsedJurnal.slice(0, 5).map(j => ({
-          ...j,
-          jenis: j.jenis || j.jenisBimbingan || 'Lainnya'
-        })));
-      }
-
-      // Fetch Kehadiran Data for Guru stats
-      const savedKehadiran = localStorage.getItem('kehadiranData') || localStorage.getItem('dataKehadiranSiswa');
-      if (savedKehadiran) {
-        const parsedKehadiran = JSON.parse(savedKehadiran);
-        if (parsedKehadiran.length > 0) {
+        // Fetch Kehadiran (Monthly Summaries for Semua)
+        const kehadiranRes = await attendanceService.getMonthlySummaries('Semua');
+        if (kehadiranRes.length > 0) {
           let totalSakit = 0, totalIzin = 0, totalTk = 0;
           let muridKritis = new Set();
           
-          parsedKehadiran.forEach(k => {
-            const sakit = Number(k.sakit) || 0;
-            const izin = Number(k.izin) || 0;
-            const tk = k.tk !== undefined ? Number(k.tk) : (Number(k.tanpaKeterangan) || 0);
-            
-            totalSakit += sakit;
-            totalIzin += izin;
-            totalTk += tk;
-            
-            // Mark student as needing attention if they have "Tanpa Keterangan" > 0
-            if (tk > 0) muridKritis.add(k.murid || k.namaMurid);
+          kehadiranRes.forEach(k => {
+            totalSakit += k.sakit;
+            totalIzin += k.izin;
+            totalTk += k.tk;
+            if (k.tk > 0) muridKritis.add(k.murid);
           });
           
-          // Calculate percentage (assuming 26 effective days per tracked month-record)
-          const totalHariEfektif = parsedKehadiran.length * 26;
+          const totalHariEfektif = kehadiranRes.length * 26;
           const totalAbsen = totalSakit + totalIzin + totalTk;
           const totalHadir = totalHariEfektif - totalAbsen;
           
@@ -83,14 +79,24 @@ export default function Dashboard() {
           }
           setPerluPerhatian(muridKritis.size);
         }
-      }
 
-      const savedPengumuman = localStorage.getItem('dataPengumuman');
-      if (savedPengumuman) setPengumuman(JSON.parse(savedPengumuman).slice(0, 3)); // Top 3
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+        // Fetch Pengumuman
+        const pengumumanRes = await announcementService.getAll();
+        setPengumuman(pengumumanRes.slice(0, 3).map(a => ({
+           id: a.id,
+           judul: a.title,
+           isi: a.content,
+           tanggal: a.date,
+           prioritas: a.type
+        })));
+        
+      } catch (e) {
+        console.error('Error fetching dashboard data:', e);
+      }
+    };
+
+    fetchAllData();
+  }, [user]);
 
   const adminStats = [
     { title: 'Total Guru', value: totalGuru.toString(), icon: <UserCircle size={24} />, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
