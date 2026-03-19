@@ -56,15 +56,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center p-6 h-[76px]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xl">
-              G
-            </div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight leading-tight">
-              Guru Wali <span className="text-xl font-semibold">App.</span>
-            </h1>
-          </div>
+        <div className="flex items-center px-6 h-[76px]">
+          <img src="/logo.png" alt="Guru Wali App" className="h-9 w-auto object-contain" />
         </div>
 
         <nav className="p-4 space-y-0.5 mt-1 overflow-y-auto scrollbar-hide" style={{ height: 'calc(100vh - 140px)' }}>
