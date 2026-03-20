@@ -5,6 +5,7 @@ import { Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { attendanceService } from '../services/attendanceService';
 import { guidanceService } from '../services/guidanceService';
+import CustomSelect from '../components/CustomSelect';
 
 const bulanList = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -32,7 +33,7 @@ export default function RekapKehadiran() {
 
   const handleMuridChange = (e) => {
     const muridId = e.target.value;
-    const murid = muridBimbingan.find(m => String(m.id) === muridId);
+    const murid = muridBimbingan.find(m => String(m.id) === String(muridId));
     setFormData({ ...formData, murid: muridId, kelas: murid?.class || '' });
   };
 
@@ -85,14 +86,17 @@ export default function RekapKehadiran() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Murid</label>
-              <select required value={formData.murid} onChange={handleMuridChange} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
-                <option value="" disabled>-- Pilih Murid --</option>
-                {muridBimbingan.length > 0 ? (
-                  muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.name}</option>)
-                ) : (
-                  <option value="" disabled>Belum ada murid bimbingan yang Dipilih di menu Murid Bimbingan</option>
-                )}
-              </select>
+              <CustomSelect
+                searchable
+                required
+                value={formData.murid}
+                onChange={handleMuridChange}
+                placeholder="-- Pilih Murid --"
+                options={muridBimbingan.length > 0 
+                  ? muridBimbingan.map(m => ({ value: m.id, label: m.name }))
+                  : [{ value: '', label: 'Belum ada murid bimbingan' }]
+                }
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Kelas (Otomatis)</label>
@@ -100,10 +104,13 @@ export default function RekapKehadiran() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Bulan</label>
-              <select required value={formData.bulan} onChange={(e) => setFormData({...formData, bulan: e.target.value})} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
-                <option value="" disabled>-- Pilih Bulan --</option>
-                {bulanList.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <CustomSelect
+                required
+                value={formData.bulan}
+                onChange={(e) => setFormData({...formData, bulan: e.target.value})}
+                placeholder="-- Pilih Bulan --"
+                options={bulanList.map(b => ({ value: b, label: b }))}
+              />
             </div>
           </div>
 

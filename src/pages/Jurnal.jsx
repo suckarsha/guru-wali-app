@@ -5,6 +5,7 @@ import { Save, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { journalService } from '../services/journalService';
 import { guidanceService } from '../services/guidanceService';
+import CustomSelect from '../components/CustomSelect';
 
 export default function Jurnal() {
   const { user } = useAuth();
@@ -82,10 +83,14 @@ export default function Jurnal() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Murid</label>
-              <select required value={formData.student_id} onChange={handleMuridChange} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
-                <option value="" disabled>-- Pilih Murid Bimbingan --</option>
-                {muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <CustomSelect
+                searchable
+                required
+                value={formData.student_id}
+                onChange={handleMuridChange}
+                placeholder="-- Pilih Murid Bimbingan --"
+                options={muridBimbingan.map(m => ({ value: m.id, label: m.name }))}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Kelas (Otomatis)</label>
@@ -105,13 +110,18 @@ export default function Jurnal() {
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Jenis Bimbingan</label>
-            <select required value={formData.jenis} onChange={(e) => setFormData({...formData, jenis: e.target.value})} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
-              <option value="" disabled>-- Pilih Jenis Bimbingan --</option>
-              <option value="Pendampingan Akademik">Pendampingan Akademik</option>
-              <option value="Pengembangan Kompetensi">Pengembangan Kompetensi</option>
-              <option value="Pengembangan Keterampilan">Pengembangan Keterampilan</option>
-              <option value="Pengembangan Karakter">Pengembangan Karakter</option>
-            </select>
+            <CustomSelect
+              required
+              value={formData.jenis}
+              onChange={(e) => setFormData({...formData, jenis: e.target.value})}
+              placeholder="-- Pilih Jenis Bimbingan --"
+              options={[
+                { value: 'Pendampingan Akademik', label: 'Pendampingan Akademik' },
+                { value: 'Pengembangan Kompetensi', label: 'Pengembangan Kompetensi' },
+                { value: 'Pengembangan Keterampilan', label: 'Pengembangan Keterampilan' },
+                { value: 'Pengembangan Karakter', label: 'Pengembangan Karakter' },
+              ]}
+            />
           </div>
 
           <div className="space-y-2">

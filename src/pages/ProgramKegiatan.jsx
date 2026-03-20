@@ -66,17 +66,17 @@ export default function ProgramKegiatan() {
         {programData.map((program, index) => (
           <div
             key={index}
-            className="bg-white dark:bg-surface-dark rounded-2xl shadow-soft-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300"
+            className="bg-white dark:bg-surface-dark rounded-2xl shadow-soft-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/20"
           >
             <button
               onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-              className="w-full flex items-center justify-between p-5 sm:p-6 text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors"
+              className="w-full flex items-center justify-between p-5 sm:p-6 text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all duration-300 group"
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${program.color}`}>
+                <div className={`p-2.5 rounded-xl ${program.color} transition-transform duration-300 group-hover:scale-110`}>
                   {program.icon}
                 </div>
-                <h3 className="text-[16px] font-bold text-gray-800 dark:text-white">{program.title}</h3>
+                <h3 className="text-[16px] font-bold text-gray-800 dark:text-white group-hover:text-primary transition-colors duration-300">{program.title}</h3>
               </div>
               <ChevronDown
                 size={20}
@@ -88,8 +88,8 @@ export default function ProgramKegiatan() {
               <div className="px-5 sm:px-6 pb-5 sm:pb-6">
                 <ul className="space-y-3 ml-1">
                   {program.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <li key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-200 -ml-2 pl-2">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0 transition-transform duration-200" />
                       <span className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{item}</span>
                     </li>
                   ))}
