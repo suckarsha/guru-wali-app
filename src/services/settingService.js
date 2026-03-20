@@ -36,5 +36,15 @@ export const settingService = {
       result = data;
     }
     return result;
+  },
+
+  async clearAllDatabase() {
+    // Delete in sequence to avoid foreign key constraints
+    await supabase.from('attendance_records').delete().not('id', 'is', null);
+    await supabase.from('student_guidance').delete().not('id', 'is', null);
+    await supabase.from('guidance_journals').delete().not('id', 'is', null);
+    await supabase.from('students').delete().not('id', 'is', null);
+    await supabase.from('classes').delete().not('id', 'is', null);
+    await supabase.from('announcements').delete().not('id', 'is', null);
   }
 };
