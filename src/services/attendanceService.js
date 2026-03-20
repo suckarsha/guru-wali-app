@@ -89,6 +89,15 @@ export const attendanceService = {
     addRecords(izin, 'Izin');
     addRecords(tk, 'Alpa');
 
+    // If 0 absences, add a 'Hadir' record so the month is logged and shows up in data
+    if (payload.length === 0) {
+      payload.push({
+        student_id: studentId,
+        tanggal: `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`,
+        status: 'Hadir'
+      });
+    }
+
     if (payload.length > 0) {
       const { error } = await supabase.from('attendance_records').insert(payload);
       if (error) throw error;

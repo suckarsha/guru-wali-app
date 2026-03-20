@@ -65,12 +65,25 @@ export default function DataKehadiran() {
   });
 
   // Data for the donut chart (selected student)
-  const selectedData = dataKehadiran.find(k => k.murid === chartMurid) || dataKehadiran[0];
-  const hadir = selectedData ? TOTAL_HARI - selectedData.jumlah : 0;
-  const pctHadir = selectedData ? Math.round((hadir / TOTAL_HARI) * 100) : 0;
-  const pctSakit = selectedData ? Math.round((selectedData.sakit / TOTAL_HARI) * 100) : 0;
-  const pctIzin = selectedData ? Math.round((selectedData.izin / TOTAL_HARI) * 100) : 0;
-  const pctTK = selectedData ? Math.round((selectedData.tk / TOTAL_HARI) * 100) : 0;
+  const studentRecords = dataKehadiran.filter(k => k.murid === chartMurid);
+  const validRecords = studentRecords.length > 0 ? studentRecords : dataKehadiran.filter(k => k.murid === (dataKehadiran[0]?.murid || ''));
+  const recordCount = validRecords.length;
+
+  const aggregatedSakit = validRecords.reduce((sum, curr) => sum + curr.sakit, 0);
+  const aggregatedIzin = validRecords.reduce((sum, curr) => sum + curr.izin, 0);
+  const aggregatedTk = validRecords.reduce((sum, curr) => sum + curr.tk, 0);
+  const aggregatedJumlah = validRecords.reduce((sum, curr) => sum + curr.jumlah, 0);
+
+  const maxHari = TOTAL_HARI * (recordCount || 1);
+  const hadir = recordCount > 0 ? maxHari - aggregatedJumlah : 0;
+  
+  const pctHadir = recordCount > 0 ? Math.round((hadir / maxHari) * 100) : 0;
+  const pctSakit = recordCount > 0 ? Math.round((aggregatedSakit / maxHari) * 100) : 0;
+  const pctIzin = recordCount > 0 ? Math.round((aggregatedIzin / maxHari) * 100) : 0;
+  const pctTK = recordCount > 0 ? Math.round((aggregatedTk / maxHari) * 100) : 0;
+
+  // Provide a sample object for rendering UI texts
+  const displayRecord = validRecords[0] || null;
 
   // Build conic-gradient for donut
   const segments = [];
@@ -244,7 +257,7 @@ export default function DataKehadiran() {
           </select>
         </div>
 
-        {selectedData ? (
+        {displayRecord ? (
           <div className="flex flex-col md:flex-row items-center gap-8">
             {/* Donut */}
             <div className="relative w-48 h-48 flex-shrink-0">
@@ -263,34 +276,34 @@ export default function DataKehadiran() {
 
             {/* Legend & Stats */}
             <div className="flex-1 w-full">
-              <p className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{selectedData.murid} — {selectedData.kelas}</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{displayRecord.murid} — {displayRecord.kelas} (Total {recordCount} Bulan)</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                   <div className="w-4 h-4 rounded-full bg-emerald-500 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Hadir</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Hadir</p>
                     <p className="text-lg font-bold text-emerald-600">{hadir} <span className="text-xs font-normal">hari</span></p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
                   <div className="w-4 h-4 rounded-full bg-amber-500 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Sakit</p>
-                    <p className="text-lg font-bold text-amber-600">{selectedData.sakit} <span className="text-xs font-normal">hari</span></p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Sakit</p>
+                    <p className="text-lg font-bold text-amber-600">{aggregatedSakit} <span className="text-xs font-normal">hari</span></p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                   <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Izin</p>
-                    <p className="text-lg font-bold text-blue-600">{selectedData.izin} <span className="text-xs font-normal">hari</span></p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Izin</p>
+                    <p className="text-lg font-bold text-blue-600">{aggregatedIzin} <span className="text-xs font-normal">hari</span></p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
                   <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Tanpa Keterangan</p>
-                    <p className="text-lg font-bold text-red-600">{selectedData.tk} <span className="text-xs font-normal">hari</span></p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total TK</p>
+                    <p className="text-lg font-bold text-red-600">{aggregatedTk} <span className="text-xs font-normal">hari</span></p>
                   </div>
                 </div>
               </div>
