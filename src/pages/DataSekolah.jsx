@@ -33,7 +33,7 @@ export default function DataSekolah() {
       if (data) {
         setFormData({
           namaSekolah: data.nama_sekolah || '',
-          npsn: data.npsn || localStorage.getItem('school_npsn') || '',
+          npsn: data.npsn || '',
           alamat: data.alamat || '',
           kota: data.kota || '',
           kopSurat1: data.kop_surat_1 || '',
@@ -53,10 +53,9 @@ export default function DataSekolah() {
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      // Save NPSN to localStorage (column may not exist in Supabase table)
-      if (formData.npsn) localStorage.setItem('school_npsn', formData.npsn);
       await settingService.updateSettings({
         nama_sekolah: formData.namaSekolah,
+        npsn: formData.npsn,
         kop_surat_1: formData.kopSurat1,
         kop_surat_2: formData.kopSurat2,
         alamat: formData.alamat,
