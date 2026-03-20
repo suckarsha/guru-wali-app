@@ -8,7 +8,7 @@ export default function KelolaPengumuman() {
   const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ judul: '', isi: '', tanggal: '', prioritas: 'biasa' });
+  const [form, setForm] = useState({ judul: '', isi: '', tanggal: '' });
   const [isLoading, setIsLoading] = useState(true);
   const { showToast } = useToast();
 
@@ -37,13 +37,13 @@ export default function KelolaPengumuman() {
 
   const openAdd = () => {
     setEditItem(null);
-    setForm({ judul: '', isi: '', tanggal: '', prioritas: 'biasa' });
+    setForm({ judul: '', isi: '', tanggal: '' });
     setShowModal(true);
   };
 
   const openEdit = (item) => {
     setEditItem(item);
-    setForm({ judul: item.judul, isi: item.isi, tanggal: item.tanggal, prioritas: item.prioritas });
+    setForm({ judul: item.judul, isi: item.isi, tanggal: item.tanggal });
     setShowModal(true);
   };
 
@@ -66,7 +66,7 @@ export default function KelolaPengumuman() {
         title: form.judul,
         content: form.isi,
         date: form.tanggal,
-        type: form.prioritas
+        type: 'biasa'
       };
 
       if (editItem) {
@@ -84,13 +84,7 @@ export default function KelolaPengumuman() {
     }
   };
 
-  const getPrioritasStyle = (p) => {
-    switch (p) {
-      case 'penting': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      case 'info': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
-    }
-  };
+
 
   return (
     <>
@@ -126,9 +120,6 @@ export default function KelolaPengumuman() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-[16px] font-bold text-gray-800 dark:text-white">{item.judul}</h3>
-                  <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md ${getPrioritasStyle(item.prioritas)}`}>
-                    {item.prioritas}
-                  </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">{item.isi}</p>
                 <p className="text-xs text-gray-400">Dipublikasikan: {item.tanggal}</p>
@@ -168,19 +159,9 @@ export default function KelolaPengumuman() {
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Isi Pengumuman</label>
                 <textarea required rows={3} placeholder="Tulis isi pengumuman..." value={form.isi} onChange={(e) => setForm({...form, isi: e.target.value})} className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 resize-none transition-colors" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tanggal</label>
-                  <input type="date" required value={form.tanggal} onChange={(e) => setForm({...form, tanggal: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Prioritas</label>
-                  <select value={form.prioritas} onChange={(e) => setForm({...form, prioritas: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
-                    <option value="biasa">Biasa</option>
-                    <option value="penting">Penting</option>
-                    <option value="info">Info</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tanggal</label>
+                <input type="date" required value={form.tanggal} onChange={(e) => setForm({...form, tanggal: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors" />
               </div>
               <div className="flex justify-end gap-3 pt-3">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
