@@ -165,7 +165,7 @@ export default function Dashboard() {
                   cursor={{ fill: '#F3F4F6' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
                 />
-                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="total" radius={[6, 6, 0, 0]} barSize={60}>
                   {chartData.map((entry, index) => {
                     // Assign colors based on typical categories or just alternating
                     const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6B7280'];

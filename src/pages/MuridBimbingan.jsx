@@ -13,6 +13,7 @@ export default function MuridBimbingan() {
   const [selectedSiswa, setSelectedSiswa] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (user?.id) {
@@ -156,11 +157,23 @@ export default function MuridBimbingan() {
         }
       />
 
-      {/* Info Card */}
-      <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Info Card with Search */}
+      <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">Daftar Siswa Bimbingan Anda</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Siswa di bawah ini adalah tanggung jawab Anda. Total: <span className="font-bold text-primary">{selectedSiswa.length} Siswa</span>.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total: <span className="font-bold text-primary">{selectedSiswa.length} Siswa</span>.</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input 
+            type="text" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm" 
+            placeholder="Cari Murid Bimbingan Anda..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
         </div>
       </div>
 
@@ -194,7 +207,10 @@ export default function MuridBimbingan() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {selectedSiswa.map((siswa) => (
+                {selectedSiswa.filter(s => 
+                  s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                  s.nisn.includes(searchTerm)
+                ).map((siswa) => (
                   <tr key={siswa.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{siswa.nisn}</td>
                     <td className="px-6 py-4">
