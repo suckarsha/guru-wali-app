@@ -127,8 +127,8 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
+          <div key={index} className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm hover:shadow-lg border border-gray-100 dark:border-gray-800 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1.5 cursor-default group">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-110`}>
               {stat.icon}
             </div>
             <div>
@@ -152,7 +152,7 @@ export default function Dashboard() {
            ) : (
              <div className="space-y-3">
                {recentJurnals.map((j, idx) => (
-                 <div key={j.id || idx} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                 <div key={j.id || idx} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-gray-100 dark:hover:border-gray-700 group cursor-pointer">
                    <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary/20 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0">
                      {j.murid ? j.murid.charAt(0) : '?'}
                    </div>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                  <div 
                    key={idx} 
                    onClick={() => { setSelectedPengumuman(item); setShowModal(true); }}
-                   className={`p-4 rounded-xl cursor-pointer hover:shadow-md transition-all ${item.prioritas === 'penting' ? 'bg-primary-light dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
+                   className={`p-4 rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${item.prioritas === 'penting' ? 'bg-primary-light/50 dark:bg-gray-800 hover:bg-primary-light cursor-pointer' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:bg-white'}`}
                  >
                    <h4 className={`font-semibold text-sm mb-1 ${item.prioritas === 'penting' ? 'text-primary dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>{item.judul}</h4>
                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{item.tanggal}</p>
