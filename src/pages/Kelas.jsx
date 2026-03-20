@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
-import { Users, Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import { Users, Edit, Trash2, Plus, X, Save, Search } from 'lucide-react';
 import { classService } from '../services/classService';
 import { useToast } from '../context/ToastContext';
 
@@ -10,7 +10,12 @@ export default function Kelas() {
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ name: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const { showToast } = useToast();
+
+  const filteredData = data.filter(k => 
+    k.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     fetchClasses();
@@ -87,17 +92,32 @@ export default function Kelas() {
         }
       />
 
+      <div className="mb-6">
+        <div className="relative w-full sm:w-80">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input 
+            type="text" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm" 
+            placeholder="Cari Nama Kelas..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {isLoading ? (
           <div className="col-span-full py-10 text-center text-gray-500">
             Memuat data...
           </div>
-        ) : data.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <div className="col-span-full py-10 text-center text-gray-500">
-            Belum ada data kelas. Kelas akan otomatis terekam saat Anda mengimpor data siswa yang memiliki entri kelas.
+            {data.length === 0 ? 'Belum ada data kelas. Kelas otomatis dibuat dari impor data siswa.' : 'Kelas tidak ditemukan.'}
           </div>
         ) : (
-          [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((kelas) => (
+          [...filteredData].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((kelas) => (
           <div key={kelas.id} className="bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-soft-sm hover:shadow-soft-md transition-shadow relative group flex flex-col justify-center items-center h-28">
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{kelas.name}</h3>
             <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity absolute bottom-2">

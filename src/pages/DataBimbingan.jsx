@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import Table from '../components/Table';
 import { useToast } from '../context/ToastContext';
-import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save } from 'lucide-react';
+import { Filter, Download, FileSpreadsheet, X, Edit, Trash2, Save, Search } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { journalService } from '../services/journalService';
@@ -22,6 +22,7 @@ export default function DataBimbingan() {
   const [dataJurnal, setDataJurnal] = useState([]);
   const [filterBulan, setFilterBulan] = useState('Semua');
   const [filterMurid, setFilterMurid] = useState('Semua');
+  const [searchTerm, setSearchTerm] = useState('');
   const [chartMurid, setChartMurid] = useState('');
   const [selectedJurnal, setSelectedJurnal] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -70,7 +71,12 @@ export default function DataBimbingan() {
 
     const matchBulan = filterBulan === 'Semua' || jMonth === filterBulan;
     const matchMurid = filterMurid === 'Semua' || j.murid === filterMurid;
-    return matchBulan && matchMurid;
+    const searchLower = searchTerm.toLowerCase();
+    const matchSearch = (j.murid || '').toLowerCase().includes(searchLower) ||
+                        (j.topik || '').toLowerCase().includes(searchLower) ||
+                        (j.tindakLanjut || '').toLowerCase().includes(searchLower);
+    
+    return matchBulan && matchMurid && matchSearch;
   });
 
   // Donut chart data for selected student
@@ -294,14 +300,29 @@ export default function DataBimbingan() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Filter size={18} className="text-gray-400" />
-        <select value={filterBulan} onChange={(e) => setFilterBulan(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
-          {bulanList.map(b => <option key={b} value={b}>{b}</option>)}
-        </select>
-        <select value={filterMurid} onChange={(e) => setFilterMurid(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
-          {muridNames.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <Filter size={18} className="text-gray-400" />
+          <select value={filterBulan} onChange={(e) => setFilterBulan(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
+            {bulanList.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select value={filterMurid} onChange={(e) => setFilterMurid(e.target.value)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors">
+            {muridNames.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        
+        <div className="relative w-full sm:w-80">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input 
+            type="text" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-surface-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm" 
+            placeholder="Cari Bimbingan (Nama, Topik)..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+        </div>
       </div>
 
       <Table headers={headers} data={filteredData} renderRow={renderRow} />
