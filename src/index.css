@@ -10,6 +10,31 @@
   }
 }
 
+@layer components {
+  /* Modern Select Dropdown */
+  select.modern-select {
+    @apply appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-size: 18px;
+    padding-right: 40px !important;
+  }
+  select.modern-select:focus {
+    @apply ring-2 ring-primary/20 border-primary;
+  }
+  select.modern-select option {
+    @apply py-2;
+  }
+
+  /* Modern Date Input */
+  input[type="date"].modern-date {
+    @apply appearance-none;
+  }
+  input[type="date"].modern-date::-webkit-calendar-picker-indicator {
+    @apply opacity-0 absolute inset-0 w-full h-full cursor-pointer;
+  }
+}
+
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {

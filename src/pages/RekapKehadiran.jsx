@@ -85,7 +85,7 @@ export default function RekapKehadiran() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Nama Murid</label>
-              <select required value={formData.murid} onChange={handleMuridChange} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
+              <select required value={formData.murid} onChange={handleMuridChange} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
                 <option value="" disabled>-- Pilih Murid --</option>
                 {muridBimbingan.length > 0 ? (
                   muridBimbingan.map(m => <option key={m.id} value={m.id}>{m.name}</option>)
@@ -100,7 +100,7 @@ export default function RekapKehadiran() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Bulan</label>
-              <select required value={formData.bulan} onChange={(e) => setFormData({...formData, bulan: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors">
+              <select required value={formData.bulan} onChange={(e) => setFormData({...formData, bulan: e.target.value})} className="modern-select w-full px-4 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-all duration-200 shadow-sm hover:border-primary/40">
                 <option value="" disabled>-- Pilih Bulan --</option>
                 {bulanList.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
