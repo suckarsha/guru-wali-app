@@ -6,12 +6,12 @@ import { settingService } from '../services/settingService';
 
 export default function DataSekolah() {
   const [formData, setFormData] = useState({
-    namaSekolah: 'SMA NEGERI 1 DENPASAR',
-    npsn: '50103075',
-    alamat: 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233',
-    kota: 'Denpasar',
-    kopSurat1: 'PEMERINTAH PROVINSI BALI',
-    kopSurat2: 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
+    namaSekolah: '',
+    npsn: '',
+    alamat: '',
+    kota: '',
+    kopSurat1: '',
+    kopSurat2: '',
     logo: null,
     header: null
   });
@@ -20,6 +20,7 @@ export default function DataSekolah() {
   const headerRef = useRef(null);
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchSettings();
@@ -27,11 +28,12 @@ export default function DataSekolah() {
 
   const fetchSettings = async () => {
     try {
+      setIsLoading(true);
       const data = await settingService.getSettings();
       if (data) {
         setFormData({
           namaSekolah: data.nama_sekolah || '',
-          npsn: data.npsn || '50103075',
+          npsn: data.npsn || '',
           alamat: data.alamat || '',
           kota: data.kota || '',
           kopSurat1: data.kop_surat_1 || '',
@@ -42,6 +44,8 @@ export default function DataSekolah() {
       }
     } catch (error) {
        showToast('Gagal memuat pengaturan', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
