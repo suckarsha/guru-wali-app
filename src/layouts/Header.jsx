@@ -16,9 +16,9 @@ export default function Header({ toggleSidebar }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
   const [announcements, setAnnouncements] = useState([]);
-  
   const [profilePic, setProfilePic] = useState(null);
   const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const checkAnnouncements = async () => {
@@ -36,6 +36,10 @@ export default function Header({ toggleSidebar }) {
           
           if (lastSeenId !== latestId) {
             setHasNewAnnouncement(true);
+            const idx = data.findIndex(a => a.id == lastSeenId);
+            setUnreadCount(idx === -1 ? data.length : idx);
+          } else {
+            setUnreadCount(0);
           }
         }
       } catch (e) {
@@ -114,6 +118,7 @@ export default function Header({ toggleSidebar }) {
               if (newState && announcements.length > 0) {
                 localStorage.setItem('last_seen_announcement', announcements[0].id);
                 setHasNewAnnouncement(false);
+                setUnreadCount(0);
               }
             }}
             className="relative p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
@@ -132,7 +137,7 @@ export default function Header({ toggleSidebar }) {
             <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-surface-dark rounded-xl shadow-soft-lg border border-gray-100 dark:border-gray-800 overflow-hidden z-50 transform opacity-100 scale-100 transition-all origin-top-right">
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
                  <h3 className="font-bold text-gray-800 dark:text-gray-200">Notifikasi</h3>
-                 <span className="text-xs bg-primary-light dark:bg-primary/20 text-primary px-2 py-1 rounded-md font-semibold">{announcements.length} Baru</span>
+                 <span className="text-xs bg-primary-light dark:bg-primary/20 text-primary px-2 py-1 rounded-md font-semibold">{unreadCount} Baru</span>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {announcements.length === 0 ? (
