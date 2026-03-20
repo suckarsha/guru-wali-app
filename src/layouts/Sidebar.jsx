@@ -1,7 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { NavLink, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, BookOpen, UserCircle, Settings, ClipboardList, 
   BarChart3, School, ListChecks, FileText, CalendarCheck, Database, PieChart, Megaphone
@@ -10,38 +8,6 @@ import {
 export default function Sidebar({ isOpen, setIsOpen, appInfo }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const location = useLocation();
-  const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false);
-
-  useEffect(() => {
-    const checkAnnouncements = async () => {
-      try {
-        const { data } = await supabase
-          .from('school_announcements')
-          .select('id')
-          .order('date', { ascending: false })
-          .limit(1);
-          
-        if (data && data.length > 0) {
-          const latestId = data[0].id;
-          const lastSeenId = localStorage.getItem('last_seen_announcement');
-          
-          if (location.pathname === '/dashboard') {
-            localStorage.setItem('last_seen_announcement', latestId);
-            setHasNewAnnouncement(false);
-          } else if (lastSeenId !== latestId) {
-            setHasNewAnnouncement(true);
-          }
-        }
-      } catch (e) {
-        console.error('Error checking announcements', e);
-      }
-    };
-    
-    if (user) {
-      checkAnnouncements();
-    }
-  }, [location.pathname, user]);
 
   const adminMenu = [
     { type: 'label', title: 'UTAMA' },
@@ -110,7 +76,7 @@ export default function Sidebar({ isOpen, setIsOpen, appInfo }) {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `group relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ease-in-out ${
+                  `group flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ease-in-out ${
                     isActive
                       ? 'bg-primary text-white font-medium shadow-md shadow-primary/30'
                       : 'text-gray-600 dark:text-gray-400 hover:translate-x-1.5 focus:outline-none'
@@ -121,12 +87,6 @@ export default function Sidebar({ isOpen, setIsOpen, appInfo }) {
                   {item.icon}
                 </div>
                 <span className="text-[15px] group-hover:text-primary transition-colors duration-200">{item.title}</span>
-                {item.title === 'Dashboard' && hasNewAnnouncement && (
-                  <span className="absolute top-3 right-4 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                  </span>
-                )}
               </NavLink>
             );
           })}

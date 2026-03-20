@@ -1,16 +1,49 @@
-import { Menu, Moon, Sun, LogOut, UserCircle, ChevronDown } from 'lucide-react';
+import { Menu, Moon, Sun, LogOut, UserCircle, ChevronDown, Bell } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 export default function Header({ toggleSidebar }) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [profilePic, setProfilePic] = useState(null);
+  const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false);
+
+  useEffect(() => {
+    const checkAnnouncements = async () => {
+      try {
+        const { data } = await supabase
+          .from('school_announcements')
+          .select('id')
+          .order('date', { ascending: false })
+          .limit(1);
+          
+        if (data && data.length > 0) {
+          const latestId = data[0].id;
+          const lastSeenId = localStorage.getItem('last_seen_announcement');
+          
+          if (location.pathname === '/dashboard') {
+            localStorage.setItem('last_seen_announcement', latestId);
+            setHasNewAnnouncement(false);
+          } else if (lastSeenId !== latestId) {
+            setHasNewAnnouncement(true);
+          }
+        }
+      } catch (e) {
+        console.error('Error checking announcements', e);
+      }
+    };
+    
+    if (user) {
+      checkAnnouncements();
+    }
+  }, [location.pathname, user]);
 
   useEffect(() => {
     if (user?.id) {
@@ -57,7 +90,21 @@ export default function Header({ toggleSidebar }) {
         <Menu size={24} />
       </button>
       
-      <div className="flex items-center gap-4 ml-auto">
+      <div className="flex items-center gap-1 sm:gap-4 ml-auto">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="relative p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell size={20} />
+          {hasNewAnnouncement && (
+            <span className="absolute top-2 right-2.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+          )}
+        </button>
+
         <button
           onClick={toggleTheme}
           className="p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
