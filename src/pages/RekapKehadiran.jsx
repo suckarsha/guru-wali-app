@@ -20,7 +20,8 @@ export default function RekapKehadiran() {
   useEffect(() => {
     if (user?.id) {
       guidanceService.getByGuru(user.id).then(data => {
-        setMuridBimbingan(data);
+        const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+        setMuridBimbingan(sorted);
       }).catch(err => {
         showToast('Gagal memuat daftar murid bimbingan', 'error');
       });

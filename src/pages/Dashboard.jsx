@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [pengumuman, setPengumuman] = useState([]);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [recentJurnals, setRecentJurnals] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
   
   const [kehadiranSiswa, setKehadiranSiswa] = useState('100%');
   const [perluPerhatian, setPerluPerhatian] = useState(0);
@@ -31,9 +31,10 @@ export default function Dashboard() {
     const fetchAllData = async () => {
       try {
         // Fetch Bimbingan Count
+        let bimbinganList = [];
         if (user.role === 'guru') {
-          const bimbingan = await guidanceService.getByGuru(user.id);
-          setBimbinganCount(bimbingan.length);
+          bimbinganList = await guidanceService.getByGuru(user.id);
+          setBimbinganCount(bimbinganList.length);
         }
 
         // Fetch Total Guru
@@ -53,8 +54,31 @@ export default function Dashboard() {
 
         // Fetch Jurnal
         const jurnalRes = await journalService.getAll();
-        setTotalJurnal(jurnalRes.length);
-        setRecentJurnals(jurnalRes.slice(0, 5));
+        setTotalJurnal(user.role === 'admin' ? jurnalRes.length : jurnalRes.filter(j => j.guru_id === user.id).length);
+
+        // Fetch Recent Activities (Mixed Jurnal & Kehadiran)
+        try {
+           let jData = [];
+           let aData = [];
+           
+           const jq = supabase.from('guidance_journals').select('*, students(name), profiles(nama)').order('created_at', { ascending: false }).limit(10);
+           if (user.role === 'guru') jq.eq('guru_id', user.id);
+           const { data: jd } = await jq;
+           if (jd) jData = jd.map(j => ({ type: 'jurnal', timestamp: j.created_at, data: j }));
+           
+           const aq = supabase.from('attendance_records').select('*, students(name), profiles(nama)').order('created_at', { ascending: false }).limit(20);
+           const { data: ad } = await aq;
+           if (ad) {
+              const bimbinganIds = bimbinganList.map(b => b.id);
+              const filteredAd = user.role === 'admin' ? ad : ad.filter(a => bimbinganIds.includes(a.student_id));
+              aData = filteredAd.map(a => ({ type: 'kehadiran', timestamp: a.created_at, data: a }));
+           }
+           
+           const mixed = [...jData, ...aData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
+           setRecentActivities(mixed);
+        } catch (e) {
+           console.error('Error fetching activities:', e);
+        }
 
         // Fetch Kehadiran (Monthly Summaries for Semua)
         const kehadiranRes = await attendanceService.getMonthlySummaries('Semua');
@@ -143,35 +167,48 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Placeholder for Charts / Lists */}
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 lg:col-span-2 min-h-[400px]">
-           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Aktivitas Jurnal Terkini</h3>
-           {recentJurnals.length === 0 ? (
+           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Aktivitas Terkini</h3>
+           {recentActivities.length === 0 ? (
              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                <BookOpen size={40} className="mb-3 opacity-50" />
-               <p className="text-sm">Belum ada jurnal. Mulai catat bimbingan Anda.</p>
+               <p className="text-sm">Belum ada aktivitas.</p>
              </div>
            ) : (
              <div className="space-y-3">
-               {recentJurnals.map((j, idx) => (
-                 <div key={j.id || idx} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-gray-100 dark:hover:border-gray-700 group cursor-pointer">
-                   <div className="w-10 h-10 rounded-lg bg-primary-light dark:bg-primary/20 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0">
-                     {j.murid ? j.murid.charAt(0) : '?'}
-                   </div>
-                   <div className="flex-1 min-w-0">
-                     <div className="flex items-center justify-between mb-1">
-                       <h4 className="text-sm font-semibold text-gray-800 dark:text-white truncate">{j.murid || 'Unknown'}</h4>
-                       <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0 ml-2"><Calendar size={12} /> {j.tanggal}</span>
+               {recentActivities.map((act, idx) => {
+                 const isJurnal = act.type === 'jurnal';
+                 const mName = act.data.students?.name || act.data.murid || 'Unknown';
+                 const gName = act.data.profiles?.nama || 'Guru';
+                 const initial = mName.charAt(0);
+                 
+                 // Date Formatting
+                 const dateObj = new Date(act.timestamp || act.data.tanggal);
+                 const dateStr = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                 return (
+                   <div key={idx} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-gray-100 dark:hover:border-gray-700 group cursor-pointer">
+                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${isJurnal ? 'bg-primary-light dark:bg-primary/20 text-primary' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'}`}>
+                       {initial}
                      </div>
-                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1.5">{j.topik || 'Tidak ada topik'}</p>
-                     <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-md ${
-                       j.jenis?.includes('Akademik') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                       j.jenis?.includes('Kompetensi') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                       j.jenis?.includes('Keterampilan') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                       j.jenis?.includes('Karakter') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                       'bg-gray-100 text-gray-600'
-                     }`}>{j.jenis}</span>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between mb-1">
+                         <h4 className="text-sm font-semibold text-gray-800 dark:text-white truncate">
+                           {user.role === 'admin' ? `${gName} ➔ ` : ''}{mName}
+                         </h4>
+                         <span className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0 ml-2"><Calendar size={12} /> {dateStr}</span>
+                       </div>
+                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1.5">
+                         {isJurnal 
+                           ? `Menambahkan Jurnal Topik: ${act.data.topik || 'Tidak ada topik'}` 
+                           : `Memasukkan data Kehadiran: ${act.data.status || 'Tidak ada keterangan'} di tanggal ${act.data.tanggal}`}
+                       </p>
+                       <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-md ${isJurnal ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
+                         {isJurnal ? act.data.jenis || 'Jurnal' : 'Kehadiran'}
+                       </span>
+                     </div>
                    </div>
-                 </div>
-               ))}
+                 );
+               })}
              </div>
            )}
         </div>
