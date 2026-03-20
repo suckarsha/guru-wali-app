@@ -55,14 +55,12 @@ export default function DataSekolah() {
       setIsSubmitting(true);
       await settingService.updateSettings({
         nama_sekolah: formData.namaSekolah,
+        npsn: formData.npsn,
         kop_surat_1: formData.kopSurat1,
         kop_surat_2: formData.kopSurat2,
         alamat: formData.alamat,
         kota: formData.kota,
         logo_url: formData.logo,
-        // Since NPSN wasn't explicitly in the original table CREATE but they might add it later:
-        // we can safely pass it. Supabase might ignore it or error if strict. We will pass it just in case.
-        // Wait, if it errors, we just omit it for now or rely on fallback.
       });
       showToast('Data sekolah berhasil disimpan!', 'success');
     } catch (error) {

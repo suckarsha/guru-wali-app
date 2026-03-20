@@ -7,11 +7,12 @@ export const settingService = {
     
     if (!data) {
       return {
-        nama_sekolah: 'SMA NEGERI 1 DENPASAR',
-        kop_surat_1: 'PEMERINTAH PROVINSI BALI',
-        kop_surat_2: 'DINAS PENDIDIKAN KEPEMUDAAN DAN OLAHRAGA',
-        alamat: 'Jl. Kamboja No.17, Dangin Puri Kangin, Denpasar Utara, Bali 80233\nTelepon: (0361) 222539 | Website: www.sman1denpasar.sch.id',
-        kota: 'Denpasar',
+        nama_sekolah: '',
+        npsn: '',
+        kop_surat_1: '',
+        kop_surat_2: '',
+        alamat: '',
+        kota: '',
         logo_url: null,
         app_name: 'Guru Wali App.',
         app_logo_url: null
