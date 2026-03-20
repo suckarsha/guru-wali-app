@@ -12,6 +12,11 @@ export default function Header({ toggleSidebar }) {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  const [announcements, setAnnouncements] = useState([]);
+  
   const [profilePic, setProfilePic] = useState(null);
   const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false);
 
@@ -19,19 +24,17 @@ export default function Header({ toggleSidebar }) {
     const checkAnnouncements = async () => {
       try {
         const { data } = await supabase
-          .from('school_announcements')
-          .select('id')
+          .from('announcements')
+          .select('*')
           .order('date', { ascending: false })
-          .limit(1);
+          .limit(5);
           
         if (data && data.length > 0) {
+          setAnnouncements(data);
           const latestId = data[0].id;
           const lastSeenId = localStorage.getItem('last_seen_announcement');
           
-          if (location.pathname === '/dashboard') {
-            localStorage.setItem('last_seen_announcement', latestId);
-            setHasNewAnnouncement(false);
-          } else if (lastSeenId !== latestId) {
+          if (lastSeenId !== latestId) {
             setHasNewAnnouncement(true);
           }
         }
@@ -43,7 +46,7 @@ export default function Header({ toggleSidebar }) {
     if (user) {
       checkAnnouncements();
     }
-  }, [location.pathname, user]);
+  }, [user]);
 
   useEffect(() => {
     if (user?.id) {
@@ -73,6 +76,9 @@ export default function Header({ toggleSidebar }) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -92,26 +98,78 @@ export default function Header({ toggleSidebar }) {
       
       <div className="flex items-center gap-1 sm:gap-4 ml-auto">
         <button
-          onClick={() => navigate('/dashboard')}
-          className="relative p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell size={20} />
-          {hasNewAnnouncement && (
-            <span className="absolute top-2 right-2.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-          )}
-        </button>
-
-        <button
           onClick={toggleTheme}
           className="p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
           aria-label="Toggle Dark Mode"
         >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
+
+        {/* Notifications Dropdown */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => {
+              const newState = !notifOpen;
+              setNotifOpen(newState);
+              if (newState && announcements.length > 0) {
+                localStorage.setItem('last_seen_announcement', announcements[0].id);
+                setHasNewAnnouncement(false);
+              }
+            }}
+            className="relative p-2.5 text-gray-500 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Notifications"
+          >
+            <Bell size={20} />
+            {hasNewAnnouncement && (
+              <span className="absolute top-2 right-2.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+            )}
+          </button>
+          
+          {notifOpen && (
+            <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-surface-dark rounded-xl shadow-soft-lg border border-gray-100 dark:border-gray-800 overflow-hidden z-50 transform opacity-100 scale-100 transition-all origin-top-right">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+                 <h3 className="font-bold text-gray-800 dark:text-gray-200">Notifikasi</h3>
+                 <span className="text-xs bg-primary-light dark:bg-primary/20 text-primary px-2 py-1 rounded-md font-semibold">{announcements.length} Baru</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {announcements.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">Belum ada pengumuman terbaru.</div>
+                ) : (
+                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {announcements.map((ann, idx) => (
+                      <div key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" onClick={() => { setNotifOpen(false); navigate('/dashboard'); }}>
+                        <div className="flex gap-3">
+                           <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                             <Bell size={14} />
+                           </div>
+                           <div>
+                             <p className="text-sm font-semibold text-gray-800 dark:text-white line-clamp-1">{ann.title}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{ann.content}</p>
+                             <p className="text-[10px] text-gray-400 mt-2 font-medium">{ann.date}</p>
+                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-surface-dark">
+                <button
+                  onClick={() => {
+                    setNotifOpen(false);
+                    navigate('/dashboard');
+                  }}
+                  className="w-full py-2 text-xs font-semibold text-primary hover:text-primary-hover transition-colors text-center block"
+                >
+                  Lihat Semua di Dashboard
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
