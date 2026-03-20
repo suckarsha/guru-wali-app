@@ -9,6 +9,7 @@ import { classService } from '../services/classService';
 import { journalService } from '../services/journalService';
 import { attendanceService } from '../services/attendanceService';
 import { announcementService } from '../services/announcementService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [recentJurnals, setRecentJurnals] = useState([]);
+  const [chartData, setChartData] = useState([]);
   
   const [kehadiranSiswa, setKehadiranSiswa] = useState('100%');
   const [perluPerhatian, setPerluPerhatian] = useState(0);
@@ -55,6 +57,16 @@ export default function Dashboard() {
         const jurnalRes = await journalService.getAll();
         setTotalJurnal(jurnalRes.length);
         setRecentJurnals(jurnalRes.slice(0, 5));
+
+        // Aggregate Chart Data
+        const typeCount = {};
+        jurnalRes.forEach(j => {
+          const jns = j.jenis || 'Lainnya';
+          typeCount[jns] = (typeCount[jns] || 0) + 1;
+        });
+        const formattedChartData = Object.keys(typeCount).map(k => ({ name: k, total: typeCount[k] }));
+        formattedChartData.sort((a, b) => b.total - a.total);
+        setChartData(formattedChartData);
 
         // Fetch Kehadiran (Monthly Summaries for Semua)
         const kehadiranRes = await attendanceService.getMonthlySummaries('Semua');
@@ -137,6 +149,38 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Chart Area */}
+      <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 mb-6 transition-all duration-300">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">Analitik Jenis Jurnal Bimbingan</h3>
+        <div className="h-[320px] w-full">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <Tooltip 
+                  cursor={{ fill: '#F3F4F6' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
+                />
+                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry, index) => {
+                    // Assign colors based on typical categories or just alternating
+                    const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6B7280'];
+                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <BookOpen size={40} className="mb-3 opacity-30" />
+              <p className="text-sm">Belum ada data jurnal yang cukup untuk grafik.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Content Area */}
