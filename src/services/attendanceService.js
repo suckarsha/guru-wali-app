@@ -36,6 +36,8 @@ export const attendanceService = {
           murid: record.students?.name || 'Unknown',
           kelas: record.students?.classes?.name || 'Unknown',
           bulan: recordBulan,
+          tahun: recordDate.getFullYear(),
+          monthIndex: recordDate.getMonth(),
           sakit: 0,
           izin: 0,
           tk: 0,
@@ -55,9 +57,9 @@ export const attendanceService = {
     return Object.values(aggregated);
   },
 
-  async saveMonthlySummary(bulan, studentId, sakit, izin, tk) {
+  async saveMonthlySummary(bulan, studentId, sakit, izin, tk, selectedYear) {
     const monthIndex = bulanList.indexOf(bulan);
-    const year = new Date().getFullYear();
+    const year = selectedYear || new Date().getFullYear();
     const startDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(year, monthIndex + 1, 0).getDate();
     const endDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -104,9 +106,9 @@ export const attendanceService = {
     }
   },
   
-  async deleteMonthlySummary(bulan, studentId) {
+  async deleteMonthlySummary(bulan, studentId, selectedYear) {
     const monthIndex = bulanList.indexOf(bulan);
-    const year = new Date().getFullYear();
+    const year = selectedYear || new Date().getFullYear();
     const startDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(year, monthIndex + 1, 0).getDate();
     const endDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;

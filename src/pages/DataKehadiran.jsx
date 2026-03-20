@@ -9,7 +9,6 @@ import { attendanceService } from '../services/attendanceService';
 import { settingService } from '../services/settingService';
 
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const TOTAL_HARI = 26; // hari efektif per bulan
 
 export default function DataKehadiran() {
   const [dataKehadiran, setDataKehadiran] = useState([]);
@@ -74,8 +73,16 @@ export default function DataKehadiran() {
   const aggregatedTk = validRecords.reduce((sum, curr) => sum + curr.tk, 0);
   const aggregatedJumlah = validRecords.reduce((sum, curr) => sum + curr.jumlah, 0);
 
-  const maxHari = TOTAL_HARI * (recordCount || 1);
-  const hadir = recordCount > 0 ? maxHari - aggregatedJumlah : 0;
+  const aggregatedTotalDays = validRecords.reduce((sum, curr) => {
+    // Current year as fallback if somehow missing
+    const y = curr.tahun || new Date().getFullYear();
+    const midx = curr.monthIndex !== undefined ? curr.monthIndex : bulanList.indexOf(curr.bulan) - 1; // offset 'Semua'
+    const daysInMonth = new Date(y, midx + 1, 0).getDate();
+    return sum + daysInMonth;
+  }, 0);
+
+  const maxHari = validRecords.length > 0 ? aggregatedTotalDays : 0;
+  const hadir = validRecords.length > 0 ? maxHari - aggregatedJumlah : 0;
   
   const pctHadir = recordCount > 0 ? Math.round((hadir / maxHari) * 100) : 0;
   const pctSakit = recordCount > 0 ? Math.round((aggregatedSakit / maxHari) * 100) : 0;
@@ -113,7 +120,7 @@ export default function DataKehadiran() {
     >
       <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">{k.murid}</td>
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{k.kelas}</td>
-      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{k.bulan}</td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{k.bulan}{k.tahun ? ` ${k.tahun}` : ''}</td>
       <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-md font-bold">{k.sakit}</span></td>
       <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md font-bold">{k.izin}</span></td>
       <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md font-bold">{k.tk}</span></td>
@@ -352,7 +359,7 @@ export default function DataKehadiran() {
             <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-gray-800 dark:text-white">Detail Kehadiran</h3>
-                <p className="text-sm text-gray-500">{selectedKehadiran.bulan}</p>
+                <p className="text-sm text-gray-500">{selectedKehadiran.bulan} {selectedKehadiran.tahun}</p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><X size={20} /></button>
             </div>
@@ -398,7 +405,7 @@ export default function DataKehadiran() {
                 <button onClick={async () => {
                   if (confirm('Yakin ingin menghapus rekap kehadiran ini?')) {
                     try {
-                      await attendanceService.deleteMonthlySummary(selectedKehadiran.bulan, selectedKehadiran.student_id);
+                      await attendanceService.deleteMonthlySummary(selectedKehadiran.bulan, selectedKehadiran.student_id, selectedKehadiran.tahun);
                       const updated = dataKehadiran.filter(k => k.id !== selectedKehadiran.id);
                       setDataKehadiran(updated);
                       setShowModal(false);
@@ -431,7 +438,7 @@ export default function DataKehadiran() {
               const tk = Number(editForm.tk) || 0;
               
               try {
-                await attendanceService.saveMonthlySummary(editForm.bulan, editForm.student_id, sakit, izin, tk);
+                await attendanceService.saveMonthlySummary(editForm.bulan, editForm.student_id, sakit, izin, tk, editForm.tahun);
                 const updatedEntry = { ...editForm, sakit, izin, tk, jumlah: sakit + izin + tk };
                 const updated = dataKehadiran.map(k => k.id === editForm.id ? updatedEntry : k);
                 setDataKehadiran(updated);

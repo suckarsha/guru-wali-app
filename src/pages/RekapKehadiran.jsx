@@ -48,12 +48,19 @@ export default function RekapKehadiran() {
 
     try {
       setIsSubmitting(true);
+      
+      const [yearStr, monthStr] = formData.bulan.split('-');
+      const year = parseInt(yearStr, 10);
+      const monthIndex = parseInt(monthStr, 10) - 1;
+      const bulanName = bulanList[monthIndex];
+
       await attendanceService.saveMonthlySummary(
-        formData.bulan,
+        bulanName,
         formData.murid, // this is the student_id
         Number(formData.sakit),
         Number(formData.izin),
-        Number(formData.tanpaKeterangan)
+        Number(formData.tanpaKeterangan),
+        year
       );
       
       showToast('Rekap kehadiran berhasil disimpan!', 'success');
@@ -103,13 +110,13 @@ export default function RekapKehadiran() {
               <input type="text" readOnly value={formData.kelas} placeholder="Otomatis terisi" className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm text-gray-600 dark:text-gray-400 cursor-not-allowed" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Bulan</label>
-              <CustomSelect
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Bulan & Tahun</label>
+              <input
+                type="month"
                 required
                 value={formData.bulan}
                 onChange={(e) => setFormData({...formData, bulan: e.target.value})}
-                placeholder="-- Pilih Bulan --"
-                options={bulanList.map(b => ({ value: b, label: b }))}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-gray-800 dark:text-gray-200 transition-colors"
               />
             </div>
           </div>
