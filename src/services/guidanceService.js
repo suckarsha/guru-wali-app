@@ -43,6 +43,15 @@ export const guidanceService = {
     }
   },
 
+  async deleteBulk(guruId, studentIds) {
+    const { error } = await supabase
+      .from('student_guidance')
+      .delete()
+      .eq('guru_id', guruId)
+      .in('student_id', studentIds);
+    if (error) throw error;
+  },
+
   async updateContact(guruId, studentId, contact) {
     const { error } = await supabase
       .from('student_guidance')

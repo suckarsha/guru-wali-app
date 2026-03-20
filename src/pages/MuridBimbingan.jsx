@@ -14,6 +14,7 @@ export default function MuridBimbingan() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [checkedStudents, setCheckedStudents] = useState([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -32,6 +33,7 @@ export default function MuridBimbingan() {
       bimbinganSiswa.sort((a, b) => a.name.localeCompare(b.name));
       setDataSiswaAwal(allSiswa);
       setSelectedSiswa(bimbinganSiswa);
+      setCheckedStudents([]); 
       setIsLoaded(true);
     } catch (error) {
        showToast('Gagal memuat data murid', 'error');
@@ -140,6 +142,43 @@ export default function MuridBimbingan() {
     return matchSearch && matchClass;
   });
 
+  const filteredSelectedSiswa = useMemo(() => {
+    return selectedSiswa.filter(s => 
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      s.nisn.includes(searchTerm)
+    );
+  }, [selectedSiswa, searchTerm]);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setCheckedStudents(filteredSelectedSiswa.map(s => s.id));
+    } else {
+      setCheckedStudents([]);
+    }
+  };
+
+  const handleSelectOne = (id, checked) => {
+    if (checked) {
+      setCheckedStudents(prev => [...prev, id]);
+    } else {
+      setCheckedStudents(prev => prev.filter(studentId => studentId !== id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Yakin ingin menghapus ${checkedStudents.length} murid dari daftar bimbingan Anda?`)) return;
+    try {
+      setIsLoading(true);
+      await guidanceService.deleteBulk(user.id, checkedStudents);
+      showToast(`${checkedStudents.length} murid berhasil dihapus`, 'success');
+      setCheckedStudents([]);
+      fetchData();
+    } catch (e) {
+      showToast('Gagal menghapus beberapa murid bimbingan', 'error');
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -160,8 +199,16 @@ export default function MuridBimbingan() {
       {/* Info Card with Search */}
       <div className="bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-soft-sm border border-gray-100 dark:border-gray-800 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white">Daftar Siswa Bimbingan Anda</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total: <span className="font-bold text-primary">{selectedSiswa.length} Siswa</span>.</p>
+           <h3 className="text-lg font-bold text-gray-800 dark:text-white">Daftar Siswa Bimbingan Anda</h3>
+           <div className="flex items-center gap-4 mt-1">
+             <p className="text-sm text-gray-500 dark:text-gray-400">Total: <span className="font-bold text-primary">{selectedSiswa.length} Siswa</span>.</p>
+             {checkedStudents.length > 0 && (
+               <button onClick={handleBulkDelete} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-md transition-colors border border-red-100 dark:border-red-900/30">
+                 <Trash2 size={13} />
+                 Hapus {checkedStudents.length} Terpilih
+               </button>
+             )}
+           </div>
         </div>
         <div className="relative w-full md:w-80">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -199,6 +246,14 @@ export default function MuridBimbingan() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                  <th className="px-6 py-4 w-12 text-center">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:checked:bg-primary cursor-pointer"
+                      checked={filteredSelectedSiswa.length > 0 && checkedStudents.length === filteredSelectedSiswa.length}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-4 text-[13px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">NISN</th>
                   <th className="px-6 py-4 text-[13px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Nama Lengkap</th>
                   <th className="px-6 py-4 text-[13px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Kelas</th>
@@ -207,11 +262,16 @@ export default function MuridBimbingan() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {selectedSiswa.filter(s => 
-                  s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                  s.nisn.includes(searchTerm)
-                ).map((siswa) => (
+                {filteredSelectedSiswa.map((siswa) => (
                   <tr key={siswa.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="px-6 py-4 w-12 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:checked:bg-primary cursor-pointer"
+                        checked={checkedStudents.includes(siswa.id)}
+                        onChange={(e) => handleSelectOne(siswa.id, e.target.checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{siswa.nisn}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
