@@ -22,6 +22,18 @@ export default function Login() {
   // Trigger entrance animation on mount
   useEffect(() => {
     setIsVisible(true);
+    
+    document.title = appInfo.name;
+    if (appInfo.logo) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = appInfo.logo;
+    }
+
     // Fetch global app config
     settingService.getSettings()
       .then(data => {
@@ -32,6 +44,17 @@ export default function Login() {
           localStorage.setItem('GuruWali_AppName_Cache', fetchedName);
           if (fetchedLogo) localStorage.setItem('GuruWali_AppLogo_Cache', fetchedLogo);
           else localStorage.removeItem('GuruWali_AppLogo_Cache');
+
+          document.title = fetchedName;
+          if (fetchedLogo) {
+            let iconLink = document.querySelector("link[rel~='icon']");
+            if (!iconLink) {
+              iconLink = document.createElement('link');
+              iconLink.rel = 'icon';
+              document.head.appendChild(iconLink);
+            }
+            iconLink.href = fetchedLogo;
+          }
         }
       })
       .catch(console.error);

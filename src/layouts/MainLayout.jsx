@@ -15,6 +15,15 @@ export default function MainLayout() {
   });
 
   useEffect(() => {
+    document.title = appInfo.name;
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = appInfo.logo;
+
     if (user) {
       settingService.getSettings()
         .then(data => {
@@ -24,6 +33,15 @@ export default function MainLayout() {
             setAppInfo({ name: fetchedName, logo: fetchedLogo });
             localStorage.setItem('GuruWali_AppName_Cache', fetchedName);
             localStorage.setItem('GuruWali_AppLogo_Cache', fetchedLogo);
+            
+            document.title = fetchedName;
+            let iconLink = document.querySelector("link[rel~='icon']");
+            if (!iconLink) {
+              iconLink = document.createElement('link');
+              iconLink.rel = 'icon';
+              document.head.appendChild(iconLink);
+            }
+            iconLink.href = fetchedLogo;
           }
         })
         .catch(err => console.error('Failed to load global app settings:', err));
