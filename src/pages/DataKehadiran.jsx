@@ -10,6 +10,18 @@ import { settingService } from '../services/settingService';
 
 const bulanList = ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
+function getEffectiveDays(year, monthIndex) {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  let effectiveDays = 0;
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(year, monthIndex, i);
+    if (d.getDay() !== 0) { // Exclude Sundays
+      effectiveDays++;
+    }
+  }
+  return effectiveDays;
+}
+
 export default function DataKehadiran() {
   const [dataKehadiran, setDataKehadiran] = useState([]);
   const [filterBulan, setFilterBulan] = useState('Semua');
@@ -77,8 +89,7 @@ export default function DataKehadiran() {
     // Current year as fallback if somehow missing
     const y = curr.tahun || new Date().getFullYear();
     const midx = curr.monthIndex !== undefined ? curr.monthIndex : bulanList.indexOf(curr.bulan) - 1; // offset 'Semua'
-    const daysInMonth = new Date(y, midx + 1, 0).getDate();
-    return sum + daysInMonth;
+    return sum + getEffectiveDays(y, midx);
   }, 0);
 
   const maxHari = validRecords.length > 0 ? aggregatedTotalDays : 0;
