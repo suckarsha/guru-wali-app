@@ -22,7 +22,7 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [recentActivities, setRecentActivities] = useState([]);
   
-  const [kehadiranSiswa, setKehadiranSiswa] = useState('100%');
+  const [kehadiranSiswa, setKehadiranSiswa] = useState('-');
   const [perluPerhatian, setPerluPerhatian] = useState(0);
 
   useEffect(() => {
@@ -83,25 +83,41 @@ export default function Dashboard() {
         // Fetch Kehadiran (Monthly Summaries for Semua)
         const kehadiranRes = await attendanceService.getMonthlySummaries('Semua');
         if (kehadiranRes.length > 0) {
-          let totalSakit = 0, totalIzin = 0, totalTk = 0;
-          let muridKritis = new Set();
-          
-          kehadiranRes.forEach(k => {
-            totalSakit += k.sakit;
-            totalIzin += k.izin;
-            totalTk += k.tk;
-            if (k.tk > 0) muridKritis.add(k.murid);
-          });
-          
-          const totalHariEfektif = kehadiranRes.length * 26;
-          const totalAbsen = totalSakit + totalIzin + totalTk;
-          const totalHadir = totalHariEfektif - totalAbsen;
-          
-          if (totalHariEfektif > 0) {
-            const pct = Math.round((totalHadir / totalHariEfektif) * 100);
-            setKehadiranSiswa(`${pct}%`);
+          // For guru, only count their own bimbingan students
+          const bimbinganIds = bimbinganList.map(b => b.id);
+          const relevantData = user.role === 'guru' 
+            ? kehadiranRes.filter(k => bimbinganIds.includes(k.student_id))
+            : kehadiranRes;
+
+          if (relevantData.length > 0) {
+            let totalSakit = 0, totalIzin = 0, totalTk = 0;
+            let muridKritis = new Set();
+            
+            relevantData.forEach(k => {
+              totalSakit += k.sakit;
+              totalIzin += k.izin;
+              totalTk += k.tk;
+              if (k.tk > 0) muridKritis.add(k.murid);
+            });
+            
+            const totalHariEfektif = relevantData.length * 26;
+            const totalAbsen = totalSakit + totalIzin + totalTk;
+            const totalHadir = totalHariEfektif - totalAbsen;
+            
+            if (totalHariEfektif > 0) {
+              const pct = Math.round((totalHadir / totalHariEfektif) * 100);
+              setKehadiranSiswa(`${pct}%`);
+            } else {
+              setKehadiranSiswa('-');
+            }
+            setPerluPerhatian(muridKritis.size);
+          } else {
+            setKehadiranSiswa('-');
+            setPerluPerhatian(0);
           }
-          setPerluPerhatian(muridKritis.size);
+        } else {
+          setKehadiranSiswa('-');
+          setPerluPerhatian(0);
         }
 
         // Fetch Pengumuman
